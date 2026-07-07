@@ -1,0 +1,294 @@
+									NOMBRE DEL PROYECTO:EVALIA
+
+# Documento de visión resumido
+
+## Problema
+
+Los docentes dedican muchas horas a corregir exámenes escritos manualmente, retrasando la devolución de resultados y aumentando su carga laboral.
+
+---
+
+## Objetivo
+
+Desarrollar una aplicación web de asistencia a la corrección de exámenes escritos que utilice inteligencia 
+artificial para analizar las respuestas, proponer una calificación y generar observaciones por pregunta, manteniendo siempre 
+al docente como responsable de la evaluación final.
+
+---
+
+## Público objetivo
+
+* Profesores de nivel secundario.
+
+*(El portal para alumnos queda fuera del MVP y podría incorporarse en futuras versiones.)*
+
+---
+
+## Alcance del MVP (Minimum Viable Product)
+
+El profesor podrá:
+
+* iniciar sesión con Google;
+* crear exámenes;
+* cargar las preguntas y respuestas esperadas;
+* registrar alumnos (solo nombre y legajo, si lo necesitan);
+* subir fotografías de los exámenes;
+* solicitar una pre-corrección mediante Gemini;
+* revisar la sugerencia de la IA;
+* modificar la nota cuando corresponda;
+* aprobar la corrección definitiva.
+
+---
+
+## Fuera del alcance
+
+* Corrección totalmente automática.
+* Reconocimiento perfecto de cualquier tipo de letra.
+* Exámenes digitales.
+* Portal del alumno.
+* Estadísticas avanzadas.
+* Exportación de PDF.
+* Notificaciones.
+* Integraciones con otras plataformas.
+
+---
+
+# Flujo
+
+1. El profesor inicia sesión con Google.
+2. Crea un examen.
+3. Agrega las preguntas junto con la respuesta esperada y el puntaje máximo.
+4. Los alumnos realizan el examen en papel.
+5. El profesor sube una fotografía del examen.
+6. El backend envía la imagen y las respuestas esperadas a Gemini.
+7. Gemini devuelve un JSON estructurado con:
+
+   * texto extraído;
+   * estado de legibilidad;
+   * puntaje sugerido;
+   * comentarios por pregunta.
+8. Si la respuesta no es confiable, la entrega queda marcada como **"Requiere revisión"**.
+9. Si es válida, el profesor revisa la sugerencia.
+10. El profesor puede modificar la nota y aprobar la corrección.
+
+---
+
+# Tecnologías
+
+### Frontend
+
+* Next.js
+* React
+* Tailwind CSS
+* Auth.js (Google OAuth)
+
+### Backend
+
+* NestJS
+* Prisma
+* Gemini API
+
+### Base de datos
+
+* SQLite durante el desarrollo.
+* Arquitectura preparada para migrar posteriormente a PostgreSQL.
+
+---
+
+# Entidades
+
+En lugar de muchas tablas desde el inicio, mantendría un modelo sencillo:
+
+* Profesor
+* Alumno
+* Examen
+* Pregunta
+* Entrega
+* Corrección
+
+Cada **Corrección** almacenaría:
+
+* estado;
+* nota sugerida por IA;
+* nota final;
+* JSON con el detalle por pregunta;
+* fecha de aprobación.
+
+---
+
+# Estados de una entrega
+
+```text
+PENDIENTE
+
+PROCESANDO
+
+REQUIERE_REVISION
+
+PENDIENTE_APROBACION
+
+PUBLICADO
+```
+
+---
+
+# User Stories
+
+### Profesor
+
+* Iniciar sesión con Google.
+* Crear un examen.
+* Agregar preguntas y respuestas esperadas.
+* Registrar alumnos.
+* Subir fotografías de exámenes.
+* Obtener una sugerencia de corrección mediante IA.
+* Editar la calificación.
+* Publicar la corrección.
+
+---
+
+# Organización del trabajo (200 horas)
+
+* **Frontend:** autenticación, dashboard, formularios y vistas de corrección.
+* **Backend:** API REST, lógica de negocio, Prisma y autenticación.
+* **IA e integración:** comunicación con Gemini, procesamiento de respuestas y validación del JSON.
+
+La propuesta de valor
+
+Este es el mensaje más potente del proyecto:
+
+La plataforma no reemplaza al docente. 
+Reduce significativamente el tiempo dedicado a la corrección al generar una primera evaluación asistida por inteligencia artificial, 
+dejando siempre la decisión final en manos del profesor.
+
+1. Visión general del sistema:
+
+
+                    ┌─────────────────────┐
+                    │      Profesor       │
+                    └──────────┬──────────┘
+                               │
+                               │
+                     Inicia sesión (Google)
+                               │
+                               ▼
+                  ┌────────────────────────┐
+                  │     Aplicación Web      │
+                  │      (Next.js)          │
+                  └──────────┬──────────────┘
+                             │ REST API
+                             ▼
+                  ┌────────────────────────┐
+                  │       Backend          │
+                  │       (NestJS)         │
+                  └──────────┬─────────────┘
+                             │
+          ┌──────────────────┴─────────────────┐
+          │                                    │
+          ▼                                    ▼
+ ┌───────────────────┐               ┌─────────────────┐
+ │ Base de Datos     │               │ Gemini AI       │
+ │ Prisma + SQLite   │               │ Corrección IA   │
+ └───────────────────┘               └─────────────────┘
+
+2. Flujo completo de corrección
+
+                 CREAR EXAMEN
+                       │
+                       ▼
+          Agregar preguntas y respuestas
+                       │
+                       ▼
+          Los alumnos realizan el examen
+                       │
+                       ▼
+         Profesor sube fotografías
+                       │
+                       ▼
+          Backend envía imágenes +
+           respuestas esperadas
+                a Gemini AI
+                       │
+                       ▼
+        Gemini devuelve un JSON con:
+        • texto extraído
+        • puntajes sugeridos
+        • comentarios
+        • nivel de confianza
+                       │
+                       ▼
+        ¿Resultado confiable?
+             ┌────────┴────────┐
+             │                 │
+            NO                SÍ
+             │                 │
+             ▼                 ▼
+   Requiere revisión     Pendiente aprobación
+             │                 │
+             └────────┬────────┘
+                      ▼
+            Profesor revisa
+        modifica si corresponde
+                      │
+                      ▼
+           Aprueba corrección
+                      │
+                      ▼
+                Corrección final
+
+
+3. Rol de la Inteligencia Artificial
+
+
+              EXAMEN EN PAPEL
+                     │
+                     ▼
+               Fotografía
+                     │
+                     ▼
+              Gemini analiza
+                     │
+      ┌──────────────┼──────────────┐
+      │              │              │
+      ▼              ▼              ▼
+ Texto extraído   Puntaje IA   Comentarios
+      │              │              │
+      └──────────────┼──────────────┘
+                     ▼
+          Sugerencia de corrección
+                     │
+                     ▼
+             Profesor revisa
+                     │
+      ┌──────────────┴──────────────┐
+      │                             │
+Modificar nota                Aprobar nota
+      │                             │
+      └──────────────┬──────────────┘
+                     ▼
+              Corrección definitiva
+
+Idea central del proyecto
+
+┌────────────────────────────────────────────────────────────────────┐
+│                 Asistencia Inteligente a la Corrección             │
+└────────────────────────────────────────────────────────────────────┘
+
+          Profesor                           Inteligencia Artificial
+               │                                       │
+               │ Diseña el examen                      │
+               ├──────────────────────────────────────►│
+               │                                       │
+               │ Sube fotografías del examen           │
+               ├──────────────────────────────────────►│
+               │                                       │
+               │◄──────── Sugerencia de corrección ────┤
+               │                                       │
+               │ Revisa la propuesta                  │
+               │ Modifica si es necesario             │
+               │ Aprueba la nota final                │
+               ▼
+        Corrección definitiva
+
+               La IA ASISTE.
+        El profesor SIEMPRE decide.
