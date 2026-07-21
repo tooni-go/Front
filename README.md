@@ -89,6 +89,7 @@ El profesor podrá:
 * NestJS
 * Prisma
 * Gemini API
+* OpenRouter
 
 ### Base de datos
 
@@ -132,6 +133,17 @@ PENDIENTE_APROBACION
 PUBLICADO
 ```
 
+Mecanismo de Fallback (Contingencia de IA en el Backend)
+Para garantizar la estabilidad del sistema y asegurar que el proceso de corrección no dependa exclusivamente de un solo proveedor, el backend implementará un mecanismo de contingencia (Fallback) de forma invisible para el usuario.
+
+Si la API principal falla, el sistema enrutará automáticamente la petición a un proveedor de IA secundario como OpenRouter.
+
+Condiciones para activar el Fallback:
+
+* Límite de Tokens o Cuota Excedida: Si la cuenta de Gemini se queda sin tokens disponibles o alcanza el límite de peticiones por minuto permitidas en su capa gratuita (Error 429 - Too Many Requests).
+
+* Caída del Servicio o Timeout: Si los servidores de Gemini experimentan una caída (Errores 500/503) o si la respuesta demora más del tiempo máximo establecido, dejando el proceso colgado.
+
 ---
 
 # User Stories
@@ -152,8 +164,8 @@ PUBLICADO
 # Organización del trabajo (200 horas)
 
 * **Frontend:** autenticación, dashboard, formularios y vistas de corrección.
-* **Backend:** API REST, lógica de negocio, Prisma y autenticación.
-* **IA e integración:** comunicación con Gemini, procesamiento de respuestas y validación del JSON.
+* **Backend:** API REST, lógica de negocio, Prisma, autenticación y sistema de Fallback.
+* **IA e integración:** comunicación con Gemini/OpenRouter, procesamiento de respuestas y validación estricta del JSON.
 
 La propuesta de valor
 
@@ -230,13 +242,13 @@ dejando siempre la decisión final en manos del profesor.
              └────────┬────────┘
                       ▼
             Profesor revisa
-        modifica si corresponde
+         modifica si corresponde
                       │
                       ▼
-           Aprueba corrección
+            Aprueba corrección
                       │
                       ▼
-                Corrección final
+             Corrección final
 
 
 3. Rol de la Inteligencia Artificial
@@ -248,7 +260,7 @@ dejando siempre la decisión final en manos del profesor.
                Fotografía
                      │
                      ▼
-              Gemini analiza
+       Gemini u OpenRouter analiza
                      │
       ┌──────────────┼──────────────┐
       │              │              │
@@ -269,6 +281,7 @@ Modificar nota                Aprobar nota
       └──────────────┬──────────────┘
                      ▼
               Corrección definitiva
+   
 
 Idea central del proyecto
 
