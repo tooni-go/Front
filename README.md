@@ -1,125 +1,241 @@
-# Front-Juntos
+# EvalIA
 
-									NOMBRE DEL PROYECTO:EVALIA
-
-# Documento de visión resumido
-
-## Problema
-
-Los docentes dedican muchas horas a corregir exámenes escritos manualmente, retrasando la devolución de resultados y aumentando su carga laboral.
+> Plataforma web de **asistencia inteligente para la corrección de exámenes manuscritos**. EvalIA utiliza Inteligencia Artificial para generar una **sugerencia de calificación** y observaciones por pregunta, manteniendo siempre al docente como responsable de la evaluación final.
 
 ---
 
-## Objetivo
+## Índice
 
-Desarrollar una aplicación web de asistencia a la corrección de exámenes escritos que utilice inteligencia 
-artificial para analizar las respuestas, proponer una calificación y generar observaciones por pregunta, manteniendo siempre 
-al docente como responsable de la evaluación final.
+- [Visión General](#visión-general)
+- [Problema](#problema)
+- [Objetivo](#objetivo)
+- [Público Objetivo](#público-objetivo)
+- [Alcance del MVP](#alcance-del-mvp)
+- [Fuera del Alcance](#fuera-del-alcance)
+- [Flujo de Trabajo](#flujo-de-trabajo)
+- [Arquitectura](#arquitectura)
+- [Tecnologías](#tecnologías)
+- [Modelo de Datos](#modelo-de-datos)
+- [Estados de una Entrega](#estados-de-una-entrega)
+- [Mecanismo de Fallback](#mecanismo-de-fallback)
+- [User Stories](#user-stories)
+- [Organización del Equipo](#organización-del-equipo)
+- [Roadmap](#roadmap)
 
 ---
 
-## Público objetivo
+# Visión General
 
-* Profesores de nivel secundario.
+EvalIA busca reducir el tiempo que los docentes dedican a corregir exámenes escritos en papel mediante una **asistencia basada en Inteligencia Artificial**.
 
-*(El portal para alumnos queda fuera del MVP y podría incorporarse en futuras versiones.)*
+La IA analiza cada entrega, interpreta las respuestas, propone una calificación y genera observaciones por pregunta. Sin embargo, **la decisión final siempre pertenece al docente**, quien puede aceptar o modificar cualquier sugerencia antes de publicar la corrección.
 
 ---
 
-## Alcance del MVP (Minimum Viable Product)
+# Problema
+
+Los docentes de nivel secundario dedican una gran cantidad de horas extra a corregir evaluaciones escritas manualmente, retrasando la devolución de resultados y aumentando su carga laboral.
+
+---
+
+# Objetivo
+
+Desarrollar una aplicación web de asistencia a la corrección de exámenes escritos que utilice Inteligencia Artificial para:
+
+- analizar las respuestas del alumno;
+- generar una **sugerencia** de calificación;
+- producir observaciones por pregunta;
+- permitir que el docente revise y apruebe la corrección final.
+
+---
+
+# Público Objetivo
+
+- Profesores de nivel secundario.
+
+> **Nota:** El portal para alumnos queda fuera del MVP y podrá incorporarse en futuras versiones.
+
+---
+
+# Alcance del MVP
 
 El profesor podrá:
 
-* iniciar sesión con Google;
-* crear exámenes;
-* cargar las preguntas y respuestas esperadas;
-* registrar alumnos (solo nombre y legajo, si lo necesitan);
-* subir fotografías de los exámenes;
-* solicitar una pre-corrección mediante Gemini;
-* revisar la sugerencia de la IA;
-* modificar la nota cuando corresponda;
-* aprobar la corrección definitiva.
+- Iniciar sesión mediante Google.
+- Crear exámenes.
+- Definir preguntas, respuestas esperadas y puntajes.
+- Registrar alumnos.
+- Subir entregas para corregir.
+- Obtener una sugerencia de corrección mediante IA.
+- Revisar la propuesta generada.
+- Modificar puntajes y observaciones.
+- Aprobar la corrección definitiva.
+
+## Formatos de entrega soportados
+
+Una entrega podrá realizarse mediante:
+
+- 📷 Fotografía tomada desde un dispositivo móvil.
+- 🖼️ Imagen (`JPG`, `JPEG`, `PNG`, `WEBP`).
+- 📄 Documento `PDF`.
+
+En dispositivos móviles, el navegador permitirá utilizar la cámara directamente mediante el selector de archivos.
 
 ---
 
-## Fuera del alcance
+# Fuera del Alcance
 
-* Corrección totalmente automática.
-* Reconocimiento perfecto de cualquier tipo de letra.
-* Exámenes digitales.
-* Portal del alumno.
-* Estadísticas avanzadas.
-* Exportación de PDF.
-* Notificaciones.
-* Integraciones con otras plataformas.
+Esta primera versión **no incluye**:
+
+- Corrección completamente automática.
+- Reemplazo de la decisión del docente.
+- Reconocimiento perfecto de cualquier tipo de letra.
+- Portal para alumnos.
+- Exámenes digitales.
+- Estadísticas avanzadas.
+- Exportación de informes en PDF.
+- Notificaciones.
+- Integraciones con plataformas educativas.
 
 ---
 
-# Flujo
+# Flujo de Trabajo
 
 1. El profesor inicia sesión con Google.
 2. Crea un examen.
-3. Agrega las preguntas junto con la respuesta esperada y el puntaje máximo.
+3. Define las preguntas, respuestas esperadas y puntajes.
 4. Los alumnos realizan el examen en papel.
-5. El profesor sube una fotografía del examen.
-6. El backend envía la imagen y las respuestas esperadas a Gemini.
-7. Gemini devuelve un JSON estructurado con:
+5. El profesor crea una nueva entrega y carga imágenes o un PDF.
+6. El backend procesa el archivo y lo envía al proveedor de IA.
+7. El proveedor devuelve una respuesta estructurada en formato JSON con:
+   - texto detectado;
+   - estado de legibilidad;
+   - puntajes sugeridos;
+   - observaciones por pregunta.
+8. El backend valida el JSON recibido.
+9. Si la respuesta no es suficientemente confiable, la entrega queda marcada como **Requiere revisión**.
+10. El profesor revisa la propuesta.
+11. Puede modificar puntajes y observaciones.
+12. Aprueba la corrección definitiva.
 
-   * texto extraído;
-   * estado de legibilidad;
-   * puntaje sugerido;
-   * comentarios por pregunta.
-8. Si la respuesta no es confiable, la entrega queda marcada como **"Requiere revisión"**.
-9. Si es válida, el profesor revisa la sugerencia.
-10. El profesor puede modificar la nota y aprobar la corrección.
+---
+
+# Arquitectura
+
+```text
+                   Profesor
+                       │
+                       │ Google OAuth
+                       ▼
+              ┌─────────────────┐
+              │    Frontend     │
+              │ Next.js + React │
+              └────────┬────────┘
+                       │
+                    REST API
+                       │
+                       ▼
+              ┌─────────────────┐
+              │     Backend     │
+              │     NestJS      │
+              └───────┬─────────┘
+                      │
+      ┌───────────────┼────────────────┐
+      │                                │
+      ▼                                ▼
+┌──────────────┐              ┌─────────────────┐
+│ Prisma ORM   │              │ Proveedor IA    │
+│ SQLite       │              │ Gemini          │
+└──────────────┘              └────────┬────────┘
+                                       │
+                              (Fallback automático)
+                                       │
+                                       ▼
+                                 OpenRouter
+```
 
 ---
 
 # Tecnologías
 
-### Frontend
+## Frontend
 
-* Next.js
-* React
-* Tailwind CSS
-* Auth.js (Google OAuth)
+- Next.js
+- React
+- Tailwind CSS
+- Auth.js (Google OAuth)
 
-### Backend
+## Backend
 
-* NestJS
-* Prisma
-* Gemini API
-* OpenRouter
+- NestJS
+- Prisma ORM
+- Gemini API
+- OpenRouter (Fallback)
 
-### Base de datos
+## Base de Datos
 
-* SQLite durante el desarrollo.
-* Arquitectura preparada para migrar posteriormente a PostgreSQL.
+Durante el desarrollo:
 
----
+- SQLite
 
-# Entidades
+Arquitectura preparada para migrar posteriormente a:
 
-En lugar de muchas tablas desde el inicio, mantendría un modelo sencillo:
-
-* Profesor
-* Alumno
-* Examen
-* Pregunta
-* Entrega
-* Corrección
-
-Cada **Corrección** almacenaría:
-
-* estado;
-* nota sugerida por IA;
-* nota final;
-* JSON con el detalle por pregunta;
-* fecha de aprobación.
+- PostgreSQL
 
 ---
 
-# Estados de una entrega
+# Modelo de Datos
+
+## Profesor
+
+- id
+- googleId
+- nombre
+- email
+
+## Alumno
+
+- id
+- nombre
+- legajo
+
+## Examen
+
+- id
+- título
+- materia
+- curso
+- fecha
+
+## Pregunta
+
+- id
+- examenId
+- enunciado
+- respuestaEsperada
+- puntajeMáximo
+
+## Entrega
+
+- id
+- examenId
+- alumnoId
+- estado
+- fecha
+
+## Corrección
+
+- id
+- entregaId
+- notaIA
+- notaFinal
+- feedbackJSON
+- aprobadaPorProfesor
+- fechaAprobación
+
+---
+
+# Estados de una Entrega
 
 ```text
 PENDIENTE
@@ -132,7 +248,6 @@ PENDIENTE_APROBACION
 
 PUBLICADO
 ```
-
 Mecanismo de Fallback (Contingencia de IA en el Backend)
 Para garantizar la estabilidad del sistema y asegurar que el proceso de corrección no dependa exclusivamente de un solo proveedor, el backend implementará un mecanismo de contingencia (Fallback) de forma invisible para el usuario.
 
@@ -146,164 +261,137 @@ Condiciones para activar el Fallback:
 
 ---
 
-# User Stories
+# Mecanismo de Fallback
 
-### Profesor
+Para aumentar la disponibilidad del sistema, el backend implementará un mecanismo automático de contingencia.
 
-* Iniciar sesión con Google.
-* Crear un examen.
-* Agregar preguntas y respuestas esperadas.
-* Registrar alumnos.
-* Subir fotografías de exámenes.
-* Obtener una sugerencia de corrección mediante IA.
-* Editar la calificación.
-* Publicar la corrección.
+## Funcionamiento
+
+1. El backend intenta procesar la solicitud utilizando **Gemini**.
+2. Si Gemini no responde correctamente, el sistema redirige automáticamente la petición hacia un proveedor secundario compatible (por ejemplo, **OpenRouter**).
+3. El usuario no percibe el cambio de proveedor.
+
+## El Fallback se activará cuando ocurra alguno de los siguientes casos
+
+- Límite de cuota alcanzado.
+- Exceso de solicitudes (`429 Too Many Requests`).
+- Timeout.
+- Errores internos (`500`).
+- Servicio temporalmente no disponible (`503`).
+
+Este mecanismo evita que el proceso de corrección dependa exclusivamente de un único proveedor de Inteligencia Artificial.
 
 ---
 
-# Organización del trabajo (200 horas)
+# User Stories
 
-* **Frontend:** autenticación, dashboard, formularios y vistas de corrección.
-* **Backend:** API REST, lógica de negocio, Prisma, autenticación y sistema de Fallback.
-* **IA e integración:** comunicación con Gemini/OpenRouter, procesamiento de respuestas y validación estricta del JSON.
+## Profesor
 
-La propuesta de valor
+- Como profesor quiero iniciar sesión con Google para acceder de forma segura.
+- Como profesor quiero crear un examen para definir los criterios de evaluación.
+- Como profesor quiero registrar alumnos para asociar las entregas.
+- Como profesor quiero subir imágenes o archivos PDF para iniciar la corrección.
+- Como profesor quiero obtener una sugerencia de corrección mediante IA.
+- Como profesor quiero editar puntajes y observaciones antes de publicar la corrección.
+- Como profesor quiero aprobar la nota definitiva.
 
-Este es el mensaje más potente del proyecto:
+---
 
-La plataforma no reemplaza al docente. 
-Reduce significativamente el tiempo dedicado a la corrección al generar una primera evaluación asistida por inteligencia artificial, 
-dejando siempre la decisión final en manos del profesor.
+# Organización del Equipo
 
-1. Visión general del sistema:
+## Frontend
 
+- Autenticación.
+- Dashboard.
+- Gestión de exámenes.
+- Formularios.
+- Pantallas de corrección.
 
-                    ┌─────────────────────┐
-                    │      Profesor       │
-                    └──────────┬──────────┘
-                               │
-                               │
-                     Inicia sesión (Google)
-                               │
-                               ▼
-                  ┌────────────────────────┐
-                  │     Aplicación Web      │
-                  │      (Next.js)          │
-                  └──────────┬──────────────┘
-                             │ REST API
-                             ▼
-                  ┌────────────────────────┐
-                  │       Backend          │
-                  │       (NestJS)         │
-                  └──────────┬─────────────┘
-                             │
-          ┌──────────────────┴─────────────────┐
-          │                                    │
-          ▼                                    ▼
- ┌───────────────────┐               ┌─────────────────┐
- │ Base de Datos     │               │ Gemini AI       │
- │ Prisma + SQLite   │               │ Corrección IA   │
- └───────────────────┘               └─────────────────┘
+## Backend
 
-2. Flujo completo de corrección
+- API REST.
+- Lógica de negocio.
+- Prisma.
+- Autenticación.
+- Gestión del mecanismo de Fallback.
 
-                 CREAR EXAMEN
+## IA e Integración
+
+- Comunicación con Gemini.
+- Comunicación con OpenRouter.
+- Procesamiento de imágenes.
+- Validación del JSON recibido.
+- Manejo de errores.
+
+---
+
+# Propuesta de Valor
+
+La plataforma **no reemplaza al docente**.
+
+EvalIA reduce significativamente el tiempo dedicado a la corrección de evaluaciones mediante una primera propuesta generada por Inteligencia Artificial, dejando siempre la decisión final en manos del profesor.
+
+> **La IA asiste. El profesor siempre decide.**
+
+---
+
+# Flujo General
+
+```text
+                 Crear examen
                        │
                        ▼
-          Agregar preguntas y respuestas
+      Agregar preguntas y respuestas
                        │
                        ▼
-          Los alumnos realizan el examen
+      Los alumnos realizan el examen
                        │
                        ▼
-         Profesor sube fotografías
+      Profesor crea una nueva entrega
                        │
                        ▼
-          Backend envía imágenes +
-           respuestas esperadas
-                a Gemini AI
+      Sube imágenes o un PDF
                        │
                        ▼
-        Gemini devuelve un JSON con:
-        • texto extraído
-        • puntajes sugeridos
-        • comentarios
-        • nivel de confianza
+      Backend procesa el archivo
                        │
                        ▼
-        ¿Resultado confiable?
-             ┌────────┴────────┐
-             │                 │
-            NO                SÍ
-             │                 │
-             ▼                 ▼
-   Requiere revisión     Pendiente aprobación
-             │                 │
-             └────────┬────────┘
-                      ▼
-            Profesor revisa
-         modifica si corresponde
-                      │
-                      ▼
-            Aprueba corrección
-                      │
-                      ▼
-             Corrección final
+      Proveedor IA (Gemini)
+                       │
+         ┌─────────────┴─────────────┐
+         │                           │
+         ▼                           ▼
+      Correcto                  Error/Timeout
+         │                           │
+         │                    Fallback automático
+         │                           │
+         ▼                           ▼
+                    OpenRouter
+                           │
+                           ▼
+              Respuesta JSON estructurada
+                           │
+                           ▼
+               Backend valida respuesta
+                           │
+               ¿Resultado confiable?
+                  ┌────────┴────────┐
+                  │                 │
+                 NO                SÍ
+                  │                 │
+                  ▼                 ▼
+      Requiere revisión     Pendiente aprobación
+                  │                 │
+                  └────────┬────────┘
+                           ▼
+                Profesor revisa
+                Modifica si desea
+                           │
+                           ▼
+                Aprueba corrección
+                           │
+                           ▼
+                  Corrección publicada
+```
 
-
-3. Rol de la Inteligencia Artificial
-
-
-              EXAMEN EN PAPEL
-                     │
-                     ▼
-               Fotografía
-                     │
-                     ▼
-       Gemini u OpenRouter analiza
-                     │
-      ┌──────────────┼──────────────┐
-      │              │              │
-      ▼              ▼              ▼
- Texto extraído   Puntaje IA   Comentarios
-      │              │              │
-      └──────────────┼──────────────┘
-                     ▼
-          Sugerencia de corrección
-                     │
-                     ▼
-             Profesor revisa
-                     │
-      ┌──────────────┴──────────────┐
-      │                             │
-Modificar nota                Aprobar nota
-      │                             │
-      └──────────────┬──────────────┘
-                     ▼
-              Corrección definitiva
-   
-
-Idea central del proyecto
-
-┌────────────────────────────────────────────────────────────────────┐
-│                 Asistencia Inteligente a la Corrección             │
-└────────────────────────────────────────────────────────────────────┘
-
-          Profesor                           Inteligencia Artificial
-               │                                       │
-               │ Diseña el examen                      │
-               ├──────────────────────────────────────►│
-               │                                       │
-               │ Sube fotografías del examen           │
-               ├──────────────────────────────────────►│
-               │                                       │
-               │◄──────── Sugerencia de corrección ────┤
-               │                                       │
-               │ Revisa la propuesta                  │
-               │ Modifica si es necesario             │
-               │ Aprueba la nota final                │
-               ▼
-        Corrección definitiva
-
-               La IA ASISTE.
-        El profesor SIEMPRE decide.
+---
