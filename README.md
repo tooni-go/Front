@@ -188,103 +188,12 @@ La entrega se marca automáticamente con el estado `REQUIERE_REVISION`. En la pa
                                         │
                                         ▼
                                    OpenRouter
+```
 
-Tecnologías
-Frontend
-Next.js
-
-React
-
-Tailwind CSS
-
-Auth.js (Google OAuth)
-
-Backend
-NestJS
-
-Prisma ORM
-
-Gemini API (Modelos multimodal con Structured Output)
-
-OpenRouter (Fallback)
-
-Base de Datos
-Desarrollo: SQLite
-
-Producción (Futura migración): PostgreSQL
-
-Modelo de Datos
-Profesor: id, googleId, nombre, email
-
-Alumno: id, nombre, legajo
-
-Examen: id, título, materia, curso, fecha
-
-Pregunta: id, examenId, enunciado, respuestaEsperada, puntajeMáximo, esEvaluacionVisual (boolean)
-
-Entrega: id, examenId, alumnoId, estado, fecha
-
-Corrección: id, entregaId, notaIA, notaFinal, nivelConfianza (ALTO / MEDIO / BAJO), feedbackJSON, aprobadaPorProfesor, fechaAprobación
-
-Estados de una Entrega
-Plaintext
-PENDIENTE ──► PROCESANDO ──► REQUIERE_REVISION ──► PENDIENTE_APROBACION ──► PUBLICADO
-Mecanismo de Fallback
-Para aumentar la disponibilidad del sistema, el backend implementará un mecanismo automático de contingencia.
-
-Funcionamiento
-El backend intenta procesar la solicitud utilizando Gemini.
-
-Si Gemini no responde correctamente, el sistema redirige automáticamente la petición hacia un proveedor secundario compatible (por ejemplo, OpenRouter).
-
-El usuario no percibe el cambio de proveedor.
-
-Activación del Fallback
-Se activará cuando ocurra alguno de los siguientes eventos:
-
-Límite de cuota alcanzado (429 Too Many Requests).
-
-Timeout.
-
-Errores internos del servidor (500).
-
-Servicio temporalmente no disponible (503).
-
-User Stories
-Profesor
-Como profesor quiero iniciar sesión con Google para acceder de forma segura.
-
-Como profesor quiero crear un examen pegando el texto completo para acelerar la definición de rúbricas.
-
-Como profesor quiero ajustar y redistribuir puntajes de preguntas fácilmente antes de guardar un examen.
-
-Como profesor quiero registrar alumnos para asociar las entregas.
-
-Como profesor quiero subir imágenes o archivos PDF para iniciar la corrección.
-
-Como profesor quiero obtener una sugerencia de corrección con advertencias automáticas en preguntas dudosas o gráficas.
-
-Como profesor quiero editar puntajes y observaciones antes de publicar la corrección.
-
-Como profesor quiero aprobar la nota definitiva.
-
-Organización del Equipo
-Frontend: Autenticación, Dashboard, Gestión de exámenes (Carga Inteligente & Formulario Dinámico), Formularios, Pantallas de corrección y revisión visual.
-
-Backend: API REST, Lógica de negocio, Prisma ORM, Autenticación, Gestión del mecanismo de Fallback.
-
-IA e Integración: Prompts de extracción (Copy-Paste a Rúbrica JSON), Prompts de corrección con Guardrails y Autoevaluación, Comunicación con Gemini y OpenRouter, Procesamiento de imágenes, Validación del JSON recibido, Manejo de errores.
-
-Propuesta de Valor
-La plataforma no reemplaza al docente.
-
-EvalIA reduce significativamente el tiempo dedicado a la corrección de evaluaciones mediante una primera propuesta generada por Inteligencia Artificial, dejando siempre la decisión final en manos del profesor.
-
-La IA asiste. El profesor siempre decide.
-
-Flujo General
-Plaintext
-               Profesor crea examen
+TecnologíasCapaTecnologíaDescripciónFrontendNext.jsFramework de React para renderizado híbrido y optimización web.ReactBiblioteca principal para la interfaz de usuario.Tailwind CSSFramework CSS utility-first para diseño responsive.Auth.jsAutenticación simplificada integrada con Google OAuth.BackendNestJSFramework de Node.js progresivo para arquitecturas escalables.Prisma ORMORM de TypeScript para consultas y modelado de datos tipo-seguro.Inteligencia ArtificialGemini APIModelo multimodal para visión y Structured Output en JSON.OpenRouterAPI unificada utilizada como proveedor secundario (Fallback).Base de DatosSQLiteBBDD liviana para entornos de desarrollo local.PostgreSQLMotor relacional objetivo para entornos de producción.Modelo de DatosProfesorid: Identificador único.googleId: ID de autenticación de Google.nombre: Nombre completo del docente.email: Correo electrónico institucional o personal.Alumnoid: Identificador único.nombre: Nombre y apellido del estudiante.legajo: Número de identificación escolar o matrícula.Examenid: Identificador único.título: Nombre de la evaluación (e.g., "Parcial 1").materia: Asignatura asociada.curso: División o año lectivo.fecha: Fecha de realización.Preguntaid: Identificador único.examenId: Referencia al examen perteneciente.enunciado: Texto de la consigna.respuestaEsperada: Criterio o solución correcta.puntajeMáximo: Calificación máxima asignada a la pregunta.esEvaluacionVisual: Booleano que indica si la consigna requiere evaluación gráfica/diagramas.Entregaid: Identificador único.examenId: Referencia al examen.alumnoId: Referencia al alumno correspondiente.estado: Estado actual del proceso de corrección.fecha: Fecha y hora de la carga.Correcciónid: Identificador único.entregaId: Referencia a la entrega evaluada.notaIA: Puntaje acumulado propuesto por el modelo.notaFinal: Calificación definitiva confirmada por el docente.nivelConfianza: Métrica de certidumbre de la IA (ALTO | MEDIO | BAJO).feedbackJSON: Estructura JSON con las observaciones y desglose por pregunta.aprobadaPorProfesor: Booleano de validación docente.fechaAprobación: Timestamp del cierre de la corrección.Estados de una EntregaPlaintext[ PENDIENTE ] ──► [ PROCESANDO ] ──┬──► [ REQUIERE_REVISION ] ────┐
+                                   │                              │
+                                   └──► [ PENDIENTE_APROBACION ] ─┴──► [ PUBLICADO ]
+EstadoDescripciónPENDIENTELa entrega fue creada y está a la espera de iniciar el procesamiento.PROCESANDOEl archivo está siendo analizado por la API de IA (Gemini / OpenRouter).REQUIERE_REVISIONLa IA detectó nivel de confianza bajo, caligrafía ilegible o preguntas gráficas que requieren intervención manual obligatoria.PENDIENTE_APROBACIONLa sugerencia se generó con éxito y espera la revisión/confirmación final del docente.PUBLICADOEl profesor aprobó la nota final y la corrección ha quedado guardada.Mecanismo de FallbackPara aumentar la disponibilidad del sistema, el backend implementará un mecanismo automático de contingencia.FuncionamientoEl backend intenta procesar la solicitud utilizando Gemini.Si Gemini no responde correctamente, el sistema redirige automáticamente la petición hacia un proveedor secundario compatible (OpenRouter).El usuario no percibe interrupción ni cambio de proveedor en la interfaz.Desencadenantes del FallbackLímite de cuota alcanzado (429 Too Many Requests).Exceso en el tiempo de espera (Timeout).Errores internos del servidor del proveedor (500).Servicio temporalmente no disponible (503).User StoriesProfesorComo profesor quiero iniciar sesión con Google para acceder a la plataforma de forma rápida y segura.Como profesor quiero crear un examen pegando el texto completo para acelerar la definición de rúbricas mediante la Carga Inteligente.Como profesor quiero ajustar y redistribuir puntajes de preguntas fácilmente antes de guardar un examen.Como profesor quiero registrar alumnos para asociar correctamente sus entregas.Como profesor quiero subir imágenes o archivos PDF para iniciar el proceso asistido de corrección.Como profesor quiero obtener una sugerencia de corrección con advertencias automáticas en preguntas dudosas o gráficas.Como profesor quiero editar puntajes y observaciones antes de publicar la corrección definitiva.Como profesor quiero aprobar y dar por publicada la nota final.Organización del EquipoFrontendMódulo de autenticación y flujos de sesión (Google OAuth).Layout general y Dashboard del profesor.Gestión de exámenes (Carga Inteligente & Formulario Dinámico de Rúbricas).Formularios de gestión de alumnos y entregas.Pantallas de corrección, visor de imágenes y panel de edición de notas.BackendDiseño e implementación de la API REST en NestJS.Lógica de negocio y modelos de datos con Prisma ORM.Seguridad y middleware de autenticación.Módulo de comunicación resiliente y gestión del mecanismo de Fallback.IA e IntegraciónDiseño de Prompts de extracción (Copy-Paste a Rúbrica JSON).Prompts de corrección multimodal con Guardrails y Autoevaluación de certeza.Integración con la API de Gemini y adaptador para OpenRouter.Normalización, preprocesamiento de imágenes y conversión a base64.Validación estricta del JSON estructurado recibido.Manejo de excepciones y fallbacks de IA.Propuesta de ValorLa plataforma no reemplaza al docente.EvalIA reduce significativamente el tiempo dedicado a la corrección de evaluaciones mediante una primera propuesta generada por Inteligencia Artificial, dejando siempre la decisión final en manos del profesor.La IA asiste. El profesor siempre decide.Flujo GeneralPlaintext               Profesor crea examen
                          │
                          ▼
            Copia y pega texto del examen
