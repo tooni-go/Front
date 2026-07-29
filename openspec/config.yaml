@@ -1,0 +1,41 @@
+schema: spec-driven
+
+# Project context
+context: |
+  Tecnologías del Frontend:
+    - Framework principal: Next.js (React)
+    - Estilos: Tailwind CSS
+    - Autenticación: Auth.js (con Google OAuth para el login de profesores)
+    - Consumo de API: REST API de NestJS (URL Base: http://localhost:3000)
+  Dominio del proyecto:
+    - Plataforma web EvalIA de asistencia inteligente para la corrección de exámenes manuscritos.
+    - El frontend permite a los profesores:
+        - Iniciar sesión.
+        - Gestionar cursos, alumnos y exámenes.
+        - Subir imágenes/PDFs de exámenes entregados (para pre-corrección de IA).
+        - Revisar, editar notas e instrucciones y aprobar la calificación final.
+        - El docente tiene siempre el control y la decisión final.
+  Modelo de datos (de referencia del backend):
+    - Profesor (id, nombre, email, googleId)
+    - Curso (id, materia, anio, division, anioLectivo, profesorId)
+    - Alumno (id, nombre, legajo)
+    - Examen (id, título, preguntas)
+    - Pregunta (id, examenId, enunciado, respuestaEsperada, puntajeMaximo, criteriosIA, esEvaluacionVisual)
+    - Entrega (id, examenId, alumnoId, archivo, estado)
+    - Corrección (id, entregaId, notaIA, notaFinal, nivelConfianza, feedbackJSON, fechaAprobacion)
+  Estados de una Entrega en UI:
+    - PENDIENTE, PROCESANDO, REQUIERE_REVISION, PENDIENTE_APROBACION, PUBLICADO.
+
+# Per-artifact rules
+rules:
+  proposal:
+    - Detallar cómo impacta el cambio propuesto en la interfaz de usuario y la navegación.
+    - Identificar los componentes React o páginas Next.js nuevos o modificados.
+    - Asegurar que el diseño sea responsivo y adaptado para dispositivos móviles (para que el docente pueda tomar fotos).
+  design:
+    - Especificar la estructura de carpetas (App Router de Next.js si aplica).
+    - Describir cómo se maneja el estado local o la integración de la API del backend.
+    - Definir las interacciones visuales (micro-animaciones, manejo de carga y estados de error).
+  tasks:
+    - Desglosar las tareas enfocando primero en la maquetación UI/UX de los componentes, luego en la integración de Auth.js/API REST, y por último en los detalles interactivos y responsive.
+
