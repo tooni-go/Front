@@ -1,3 +1,5 @@
+'use client';
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Course, Student, Exam, Delivery, Question } from '../types/evalia';
 import { INITIAL_COURSES, INITIAL_STUDENTS, INITIAL_EXAMS, INITIAL_DELIVERIES } from '../data/initialEvaliaData';
