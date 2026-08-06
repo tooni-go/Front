@@ -79,42 +79,62 @@ export const EvaliaProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
 
   const [courses, setCourses] = useState<Course[]>(() => {
-    const saved = localStorage.getItem('evalia_courses');
-    return saved ? JSON.parse(saved) : INITIAL_COURSES;
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('evalia_courses');
+      return saved ? JSON.parse(saved) : INITIAL_COURSES;
+    }
+    return INITIAL_COURSES;
   });
 
   const [students, setStudents] = useState<Student[]>(() => {
-    const saved = localStorage.getItem('evalia_students');
-    return saved ? JSON.parse(saved) : INITIAL_STUDENTS;
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('evalia_students');
+      return saved ? JSON.parse(saved) : INITIAL_STUDENTS;
+    }
+    return INITIAL_STUDENTS;
   });
 
   const [exams, setExams] = useState<Exam[]>(() => {
-    const saved = localStorage.getItem('evalia_exams');
-    return saved ? JSON.parse(saved) : INITIAL_EXAMS;
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('evalia_exams');
+      return saved ? JSON.parse(saved) : INITIAL_EXAMS;
+    }
+    return INITIAL_EXAMS;
   });
 
   const [deliveries, setDeliveries] = useState<Delivery[]>(() => {
-    const saved = localStorage.getItem('evalia_deliveries');
-    return saved ? JSON.parse(saved) : INITIAL_DELIVERIES;
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('evalia_deliveries');
+      return saved ? JSON.parse(saved) : INITIAL_DELIVERIES;
+    }
+    return INITIAL_DELIVERIES;
   });
 
   const [pendingGeneratedExam, setPendingGeneratedExam] = useState<Partial<Exam> | null>(null);
 
   // Sync to localstorage
   useEffect(() => {
-    localStorage.setItem('evalia_courses', JSON.stringify(courses));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('evalia_courses', JSON.stringify(courses));
+    }
   }, [courses]);
 
   useEffect(() => {
-    localStorage.setItem('evalia_students', JSON.stringify(students));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('evalia_students', JSON.stringify(students));
+    }
   }, [students]);
 
   useEffect(() => {
-    localStorage.setItem('evalia_exams', JSON.stringify(exams));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('evalia_exams', JSON.stringify(exams));
+    }
   }, [exams]);
 
   useEffect(() => {
-    localStorage.setItem('evalia_deliveries', JSON.stringify(deliveries));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('evalia_deliveries', JSON.stringify(deliveries));
+    }
   }, [deliveries]);
 
   // Actions

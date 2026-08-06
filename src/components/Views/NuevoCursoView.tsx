@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { useEvalia } from '../../context/EvaliaContext';
 import { Save, X, BookPlus } from 'lucide-react';

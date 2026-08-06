@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { useEvalia } from '../../context/EvaliaContext';
 import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, Image as ImageIcon, Sparkles, Cpu, Award } from 'lucide-react';

@@ -1,87 +1,65 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useSession, signIn, signOut as nextAuthSignOut } from 'next-auth/react';
 import { User } from '../types/evalia';
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  loginWithGoogle: (email?: string) => Promise<boolean>;
-  loginWithCredentials: (email: string) => Promise<boolean>;
+  loginWithGoogle: () => Promise<void>;
+  loginWithCredentials: (email: string) => Promise<void>;
   logout: () => void;
+  updateProfile?: (data: any) => void;
+  login?: (email: string, pass: string) => Promise<void>;
+  signup?: (name: string, email: string, pass: string) => Promise<void>;
+  error?: string | null;
+  clearError?: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'evalia_teacher_session';
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { data: session, status } = useSession();
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    try {
-      const savedUser = localStorage.getItem(STORAGE_KEY);
-      if (savedUser) {
-        setUser(JSON.parse(savedUser));
-      }
-    } catch (e) {
-      console.error('Error loading session:', e);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const loginWithGoogle = async (customEmail?: string): Promise<boolean> => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/auth/google', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: customEmail || 'juan@gmail.com' }),
+    if (session?.user) {
+      setUser({
+        // @ts-ignore - Extraemos el ID si lo inyectamos en el callback
+        id: session.user.id || 'google-usr-1',
+        name: session.user.name || 'Usuario',
+        email: session.user.email || '',
+        avatar: session.user.image || '',
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.user) {
-          setUser(data.user);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(data.user));
-          setIsLoading(false);
-          return true;
-        }
-      }
-    } catch (e) {
-      console.warn('Backend endpoint unavailable, applying fallback auth:', e);
+    } else {
+      setUser(null);
     }
+  }, [session]);
 
-    // Fallback
-    const fallbackUser: User = {
-      id: 'usr-google-1001',
-      name: customEmail && customEmail !== 'juan@gmail.com' ? customEmail.split('@')[0] : 'Juan Pérez',
-      email: customEmail || 'juan@gmail.com',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    };
-    setUser(fallbackUser);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(fallbackUser));
-    setIsLoading(false);
-    return true;
+  const isLoading = status === 'loading';
+  const isAuthenticated = status === 'authenticated' && !!user;
+
+  const loginWithGoogle = async () => {
+    await signIn('google', { callbackUrl: '/dashboard' });
   };
 
-  const loginWithCredentials = async (email: string): Promise<boolean> => {
-    return loginWithGoogle(email);
+  const loginWithCredentials = async (email: string) => {
+    // Si bien mantenemos la interfaz por retrocompatibilidad visual con el LoginScreen,
+    // en este setup forzamos Google OAuth según la especificación.
+    await signIn('google', { callbackUrl: '/dashboard' });
   };
 
   const logout = () => {
-    setUser(null);
-    localStorage.removeItem(STORAGE_KEY);
+    nextAuthSignOut({ callbackUrl: '/' });
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: !!user,
+        isAuthenticated,
         isLoading,
         loginWithGoogle,
         loginWithCredentials,

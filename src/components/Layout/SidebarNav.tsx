@@ -1,16 +1,19 @@
+'use client';
+
 import React from 'react';
-import { useEvalia, Screen } from '../../context/EvaliaContext';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { Home, BookOpen, User, LogOut, ChevronRight } from 'lucide-react';
 
 export const SidebarNav: React.FC = () => {
-  const { screen, setScreen } = useEvalia();
+  const pathname = usePathname();
   const { logout } = useAuth();
 
-  const navItems: { id: Screen; label: string; icon: React.ReactNode }[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: <Home className="w-4 h-4" /> },
-    { id: 'cursos_lista', label: 'Cursos', icon: <BookOpen className="w-4 h-4" /> },
-    { id: 'perfil', label: 'Mi Perfil', icon: <User className="w-4 h-4" /> },
+  const navItems = [
+    { href: '/dashboard', label: 'Dashboard', icon: <Home className="w-4 h-4" /> },
+    { href: '/cursos', label: 'Cursos', icon: <BookOpen className="w-4 h-4" /> },
+    { href: '/perfil', label: 'Mi Perfil', icon: <User className="w-4 h-4" /> },
   ];
 
   return (
@@ -21,15 +24,12 @@ export const SidebarNav: React.FC = () => {
         </p>
 
         {navItems.map((item) => {
-          const isActive =
-            screen === item.id ||
-            (item.id === 'cursos_lista' &&
-              ['curso_nuevo', 'curso_detalle', 'alumnos_lista', 'alumno_nuevo', 'alumno_editar', 'examen_metodo', 'examen_manual', 'examen_inteligente', 'examen_revision_generado', 'examen_detalle', 'examen_preguntas', 'entrega_nueva', 'entrega_procesando', 'entrega_correccion_ia', 'entrega_revision_manual'].includes(screen));
+          const isActive = pathname.startsWith(item.href);
 
           return (
-            <button
-              key={item.id}
-              onClick={() => setScreen(item.id)}
+            <Link
+              key={item.href}
+              href={item.href}
               className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                 isActive
                   ? 'bg-indigo-600/15 text-indigo-400 border border-indigo-500/30'
@@ -43,7 +43,7 @@ export const SidebarNav: React.FC = () => {
                 <span>{item.label}</span>
               </div>
               {isActive && <ChevronRight className="w-3.5 h-3.5 text-indigo-400" />}
-            </button>
+            </Link>
           );
         })}
       </div>

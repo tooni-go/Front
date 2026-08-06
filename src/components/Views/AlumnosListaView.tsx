@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { useEvalia } from '../../context/EvaliaContext';
 import { Plus, Search, Edit2, ArrowLeft, UserCheck } from 'lucide-react';

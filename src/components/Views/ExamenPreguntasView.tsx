@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { useEvalia } from '../../context/EvaliaContext';
 import { AlertCircle, ArrowLeft, Edit3, Trash2, HelpCircle } from 'lucide-react';

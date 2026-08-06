@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { useEvalia } from '../../context/EvaliaContext';
 import { Users, FileText, Plus, ArrowRight, ArrowLeft, ChevronRight, ExternalLink } from 'lucide-react';

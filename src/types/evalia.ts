@@ -3,6 +3,9 @@ export interface User {
   name: string;
   email: string;
   avatar?: string;
+  role?: string;
+  department?: string;
+  lastLogin?: string;
 }
 
 export interface Course {

@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { useEvalia } from '../../context/EvaliaContext';
 import { FileEdit, Sparkles, ArrowRight, ArrowLeft } from 'lucide-react';

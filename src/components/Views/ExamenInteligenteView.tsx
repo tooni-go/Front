@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { useEvalia } from '../../context/EvaliaContext';
 import { Sparkles, FileText, Upload, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';

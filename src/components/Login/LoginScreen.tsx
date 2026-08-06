@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'motion/react';

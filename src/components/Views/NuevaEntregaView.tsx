@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { useEvalia } from '../../context/EvaliaContext';
 import { Upload, Image as ImageIcon, FileText, Camera, Trash2, ArrowLeft, Send } from 'lucide-react';

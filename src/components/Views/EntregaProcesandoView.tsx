@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useEffect, useState } from 'react';
 import { useEvalia } from '../../context/EvaliaContext';
 import { motion } from 'motion/react';

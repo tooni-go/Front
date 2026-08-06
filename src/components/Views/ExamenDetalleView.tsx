@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { useEvalia } from '../../context/EvaliaContext';
 import { FileText, Calendar, HelpCircle, Award, Upload, Eye, CheckCircle2, Clock, AlertTriangle, ArrowLeft, ChevronRight } from 'lucide-react';
