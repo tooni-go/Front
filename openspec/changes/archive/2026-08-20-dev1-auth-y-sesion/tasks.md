@@ -19,6 +19,6 @@ Lista de tareas para completar e implementar el flujo de inicio de sesión:
 - [x] **Validación de Redirección:**
   - Iniciar el servidor local (`npm run dev`) y abrir `http://localhost:3000`.
   - Verificar que se muestra la interfaz de inicio de sesión (`LoginScreen`) al no estar autenticado.
-- [ ] **Validación de Inicio de Sesión de Google:**
+- [x] **Validación de Inicio de Sesión de Google:**
   - Presionar el botón "Continuar con Google".
   - Completar el flujo de autenticación de Google y verificar que redirige correctamente a `http://localhost:3000/dashboard`.

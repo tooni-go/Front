@@ -12,10 +12,35 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt',
   },
   callbacks: {
+    async jwt({ token, account }) {
+      if (account) {
+        try {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token: account.id_token }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            // Se asume que el backend devuelve { accessToken: "..." }
+            token.backendJwt = data.accessToken;
+          } else {
+            console.error("Error en respuesta del backend al hacer login:", response.status);
+          }
+        } catch (error) {
+          console.error("Error al conectar con el backend para intercambio de token:", error);
+        }
+      }
+      return token;
+    },
     async session({ session, token }) {
       if (session.user) {
-        // Podríamos inyectar info adicional desde el token al objeto session.
-        // @ts-ignore - Agregamos el ID del proveedor si es necesario
+        // @ts-ignore
+        session.backendJwt = token.backendJwt;
+        // @ts-ignore
         session.user.id = token.sub;
       }
       return session;
