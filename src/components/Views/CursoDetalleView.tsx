@@ -1,26 +1,83 @@
 'use client';
 
-import React from 'react';
-import { useEvalia } from '../../context/EvaliaContext';
-import { Users, FileText, Plus, ArrowRight, ArrowLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Users, FileText, Plus, ArrowLeft, ChevronRight, Edit, Trash2 } from 'lucide-react';
+import Link from 'next/link';
 
-export const CursoDetalleView: React.FC = () => {
-  const {
-    getActiveCourse,
-    getCourseStudents,
-    getCourseExams,
-    setScreen,
-    setActiveExamId,
-  } = useEvalia();
+interface CursoDetalleViewProps {
+  courseId: string;
+}
 
-  const course = getActiveCourse();
+export const CursoDetalleView: React.FC<CursoDetalleViewProps> = ({ courseId }) => {
+  const router = useRouter();
+  const [course, setCourse] = useState<any>(null);
+  const [students, setStudents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCourseData = async () => {
+      setLoading(true);
+      try {
+        // Obtenemos todos los cursos y filtramos el actual (esto se podría optimizar con un GET /cursos/:id si existiera)
+        const resCursos = await fetch('http://localhost:3000/api/v1/cursos', {
+          headers: { 'Authorization': 'Bearer test-token' }
+        });
+        if (resCursos.ok) {
+          const cursosData = await resCursos.json();
+          const foundCourse = cursosData.find((c: any) => c.id === courseId);
+          setCourse(foundCourse);
+        }
+
+        // Obtenemos los alumnos del curso
+        const resAlumnos = await fetch(`http://localhost:3000/api/v1/alumnos?cursoId=${courseId}&limit=100`, {
+          headers: { 'Authorization': 'Bearer test-token' }
+        });
+        if (resAlumnos.ok) {
+          const alumnosData = await resAlumnos.json();
+          setStudents(alumnosData.data || []);
+        }
+      } catch (error) {
+        console.error('Error fetching course data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (courseId) fetchCourseData();
+  }, [courseId]);
+
+  const handleDeleteAlumno = async (id: string) => {
+    if (!confirm('¿Estás seguro de eliminar este alumno?')) return;
+
+    try {
+      const response = await fetch(`http://localhost:3000/api/v1/alumnos/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer test-token' }
+      });
+      if (response.ok) {
+        setStudents(students.filter(s => s.id !== id));
+      }
+    } catch (error) {
+      console.error('Error deleting alumno', error);
+    }
+  };
+
+  const handleOpenExam = (examId: string) => {
+    router.push(`/examenes/${examId}`);
+  };
+
+  if (loading) {
+    return <div className="p-8 text-center text-slate-400">Cargando detalles del curso...</div>;
+  }
+
   if (!course) {
     return (
       <div className="text-center py-12">
         <p className="text-slate-400 text-sm">Curso no encontrado.</p>
         <button
-          onClick={() => setScreen('cursos_lista')}
-          className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold"
+          onClick={() => router.push('/cursos')}
+          className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-500"
         >
           Volver a Cursos
         </button>
@@ -28,35 +85,29 @@ export const CursoDetalleView: React.FC = () => {
     );
   }
 
-  const students = getCourseStudents(course.id);
-  const exams = getCourseExams(course.id);
-
-  const handleOpenExam = (examId: string) => {
-    setActiveExamId(examId);
-    setScreen('examen_detalle');
-  };
+  const exams = course.examenes || [];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
       {/* Back button */}
       <button
-        onClick={() => setScreen('cursos_lista')}
+        onClick={() => router.push('/cursos')}
         className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
         <span>Volver a la lista de cursos</span>
       </button>
 
-      {/* Header Info Banner (Wireframe 6) */}
+      {/* Header Info Banner */}
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold text-indigo-400 bg-indigo-950 border border-indigo-800/40 px-3 py-0.5 rounded-md">
-              Año Lectivo: {course.anioLectivo}
+              Año Lectivo: {course.anioLectivo || new Date().getFullYear()}
             </span>
           </div>
           <h1 className="text-2xl md:text-3xl font-black text-white">
-            {course.materia} - {course.anio}{course.division}
+            {course.nombre || `${course.materia} ${course.anio || ''}${course.division || ''}`}
           </h1>
           <div className="flex items-center gap-6 text-xs text-slate-400 pt-1">
             <span className="flex items-center gap-1.5 font-medium">
@@ -70,22 +121,22 @@ export const CursoDetalleView: React.FC = () => {
           </div>
         </div>
 
-        {/* Action buttons matching Wireframe 6 */}
+        {/* Action buttons */}
         <div className="flex flex-wrap items-center gap-3 shrink-0">
           <button
-            onClick={() => setScreen('alumno_nuevo')}
+            onClick={() => router.push(`/cursos/${courseId}/alumnos/nuevo`)}
             className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2"
           >
             <Plus className="w-4 h-4 text-indigo-400" />
-            <span>[ + Nuevo alumno ]</span>
+            <span> Nuevo alumno </span>
           </button>
 
           <button
-            onClick={() => setScreen('examen_metodo')}
+            onClick={() => router.push(`/cursos/${courseId}/examenes/nuevo`)}
             className="py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
-            <span>[ + Nuevo examen ]</span>
+            <span> Nuevo examen </span>
           </button>
         </div>
       </div>
@@ -100,7 +151,7 @@ export const CursoDetalleView: React.FC = () => {
             </h2>
 
             <button
-              onClick={() => setScreen('alumnos_lista')}
+              onClick={() => router.push(`/cursos/${courseId}/alumnos`)}
               className="text-xs font-semibold text-indigo-400 hover:text-indigo-300"
             >
               [ Ver todos ]
@@ -108,9 +159,16 @@ export const CursoDetalleView: React.FC = () => {
           </div>
 
           {students.length === 0 ? (
-            <p className="text-xs text-slate-500 italic py-4 text-center">
-              Aún no hay alumnos registrados.
-            </p>
+            <div className="py-8 text-center flex flex-col items-center">
+              <Users className="w-8 h-8 text-slate-700 mb-2" />
+              <p className="text-xs text-slate-400">El curso no tiene alumnos.</p>
+              <button
+                onClick={() => router.push(`/cursos/${courseId}/alumnos/nuevo`)}
+                className="mt-3 px-3 py-1.5 bg-indigo-600/20 text-indigo-400 rounded-lg text-xs font-bold hover:bg-indigo-600/40"
+              >
+                Añadir primer alumno
+              </button>
+            </div>
           ) : (
             <div className="space-y-2">
               {students.slice(0, 5).map((student) => (
@@ -120,7 +178,23 @@ export const CursoDetalleView: React.FC = () => {
                 >
                   <div>
                     <p className="text-xs font-bold text-slate-200">{student.nombre}</p>
-                    <p className="text-[11px] text-slate-500">Legajo: {student.legajo}</p>
+                    <p className="text-[11px] text-slate-500">DNI / Legajo: {student.legajo}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => router.push(`/alumnos/${student.id}/editar`)}
+                      className="p-1.5 text-slate-400 hover:text-indigo-400 transition-colors"
+                      title="Editar alumno"
+                    >
+                      <Edit className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteAlumno(student.id)}
+                      className="p-1.5 text-slate-400 hover:text-red-400 transition-colors"
+                      title="Eliminar alumno"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -137,7 +211,7 @@ export const CursoDetalleView: React.FC = () => {
             </h2>
 
             <button
-              onClick={() => setScreen('examen_metodo')}
+              onClick={() => router.push(`/cursos/${courseId}/examenes/nuevo`)}
               className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -146,10 +220,11 @@ export const CursoDetalleView: React.FC = () => {
           </div>
 
           {exams.length === 0 ? (
-            <div className="text-center py-8 space-y-3">
+            <div className="text-center py-8 space-y-3 flex flex-col items-center">
+              <FileText className="w-10 h-10 text-slate-700 mb-2" />
               <p className="text-xs text-slate-500 italic">No hay exámenes en este curso aún.</p>
               <button
-                onClick={() => setScreen('examen_metodo')}
+                onClick={() => router.push(`/cursos/${courseId}/examenes/nuevo`)}
                 className="py-2 px-4 bg-indigo-600 text-white rounded-xl text-xs font-bold"
               >
                 Crear primer examen
@@ -157,7 +232,7 @@ export const CursoDetalleView: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {exams.map((exam) => (
+              {exams.map((exam: any) => (
                 <div
                   key={exam.id}
                   className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl hover:border-indigo-500/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
@@ -167,13 +242,9 @@ export const CursoDetalleView: React.FC = () => {
                       {exam.titulo}
                     </h3>
                     <div className="flex flex-wrap items-center gap-4 text-[11px] text-slate-400">
-                      <span>Fecha: {exam.fecha}</span>
+                      <span>Fecha: {new Date(exam.fecha).toLocaleDateString()}</span>
                       <span>&bull;</span>
-                      <span>{exam.preguntasCount} preguntas</span>
-                      <span>&bull;</span>
-                      <span>Puntaje Total: {exam.puntajeTotal} pts</span>
-                      <span>&bull;</span>
-                      <span className="text-indigo-300 font-semibold">{exam.entregasCount} entregas</span>
+                      <span className="text-indigo-300 font-semibold">Estado: {exam.estado}</span>
                     </div>
                   </div>
 

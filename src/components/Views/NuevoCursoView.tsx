@@ -1,24 +1,60 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useEvalia } from '../../context/EvaliaContext';
-import { Save, X, BookPlus } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Save, X, BookPlus, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export const NuevoCursoView: React.FC = () => {
-  const { addCourse, setScreen, setActiveCourseId } = useEvalia();
+  const router = useRouter();
 
   const [materia, setMateria] = useState('');
   const [anio, setAnio] = useState('2°');
   const [division, setDivision] = useState('A');
   const [anioLectivo, setAnioLectivo] = useState('2026');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!materia.trim()) return;
 
-    const created = addCourse(materia.trim(), anio, division, anioLectivo);
-    setActiveCourseId(created.id);
-    setScreen('curso_detalle');
+    setIsLoading(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch('http://localhost:3000/api/v1/cursos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer test-token'
+        },
+        body: JSON.stringify({ 
+          materia: materia.trim(), 
+          nombre: `${materia.trim()} ${anio} ${division}`,
+          anio,
+          division,
+          anioLectivo: parseInt(anioLectivo)
+        })
+      });
+
+      if (response.ok) {
+        setMessage({ type: 'success', text: 'Curso creado exitosamente.' });
+        router.refresh(); // Invalida el caché para que la lista de cursos se actualice
+        
+        setTimeout(() => {
+          router.push('/cursos');
+        }, 1500);
+      } else {
+        const errorData = await response.json();
+        setMessage({ type: 'error', text: errorData.message || 'Error al crear el curso.' });
+      }
+    } catch (error) {
+      console.error('Error al crear el curso:', error);
+      setMessage({ type: 'error', text: 'Error de conexión con el servidor.' });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -33,6 +69,17 @@ export const NuevoCursoView: React.FC = () => {
         </div>
       </div>
 
+      {message && (
+        <div className={`p-4 rounded-xl flex items-center gap-3 text-sm font-medium animate-in slide-in-from-top-2 ${
+          message.type === 'success' 
+            ? 'bg-emerald-950/50 text-emerald-400 border border-emerald-800/50' 
+            : 'bg-red-950/50 text-red-400 border border-red-800/50'
+        }`}>
+          {message.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+          <span>{message.text}</span>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 space-y-5 shadow-2xl">
         <div>
           <label className="block text-xs font-semibold text-slate-300 mb-1.5">
@@ -45,6 +92,7 @@ export const NuevoCursoView: React.FC = () => {
             placeholder="Ej: Matemática, Historia, Biología..."
             className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none transition-colors"
             required
+            disabled={isLoading || message?.type === 'success'}
           />
         </div>
 
@@ -55,6 +103,7 @@ export const NuevoCursoView: React.FC = () => {
               value={anio}
               onChange={(e) => setAnio(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none"
+              disabled={isLoading || message?.type === 'success'}
             >
               <option value="1°">1° Año</option>
               <option value="2°">2° Año</option>
@@ -72,6 +121,7 @@ export const NuevoCursoView: React.FC = () => {
               value={division}
               onChange={(e) => setDivision(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none"
+              disabled={isLoading || message?.type === 'success'}
             >
               <option value="A">División A</option>
               <option value="B">División B</option>
@@ -86,6 +136,7 @@ export const NuevoCursoView: React.FC = () => {
               value={anioLectivo}
               onChange={(e) => setAnioLectivo(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none"
+              disabled={isLoading || message?.type === 'success'}
             >
               <option value="2026">2026</option>
               <option value="2025">2025</option>
@@ -97,8 +148,9 @@ export const NuevoCursoView: React.FC = () => {
         <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-800">
           <button
             type="button"
-            onClick={() => setScreen('cursos_lista')}
+            onClick={() => router.push('/cursos')}
             className="py-2.5 px-5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2"
+            disabled={isLoading}
           >
             <X className="w-4 h-4" />
             <span>[ Cancelar ]</span>
@@ -106,10 +158,20 @@ export const NuevoCursoView: React.FC = () => {
 
           <button
             type="submit"
-            className="py-2.5 px-5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2"
+            disabled={isLoading || message?.type === 'success'}
+            className="py-2.5 px-5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-800 disabled:text-indigo-300 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2"
           >
-            <Save className="w-4 h-4" />
-            <span>[ Guardar ]</span>
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>[ Guardando... ]</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                <span>[ Guardar ]</span>
+              </>
+            )}
           </button>
         </div>
       </form>

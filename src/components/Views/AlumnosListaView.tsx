@@ -61,7 +61,7 @@ export const AlumnosListaView: React.FC = () => {
           className="py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
-          <span>[ + Nuevo alumno ]</span>
+          <span>[ Nuevo alumno ]</span>
         </button>
       </div>
 
