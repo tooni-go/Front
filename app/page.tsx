@@ -1,7 +1,15 @@
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from './api/auth/[...nextauth]/route';
 import { redirect } from 'next/navigation';
+import { LoginScreen } from '@/src/components/Login/LoginScreen';
 
-export default function HomePage() {
-  // Aquí podemos comprobar la sesión con Auth.js servidor-side
-  // Si está autenticado redirige al dashboard, sino, mostramos login
-  redirect('/dashboard');
+export default async function HomePage() {
+  const session = await getServerSession(authOptions);
+
+  if (session) {
+    redirect('/dashboard');
+  }
+
+  return <LoginScreen />;
 }
+
