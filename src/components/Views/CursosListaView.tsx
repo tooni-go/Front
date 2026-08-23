@@ -13,6 +13,7 @@ interface Course {
   division: string;
   anioLectivo: number;
   alumnos?: any[];
+  alumnosCount?: number;
   examenes?: any[];
 }
 
@@ -111,7 +112,7 @@ export const CursosListaView: React.FC = () => {
                 <div className="flex items-center gap-6 text-xs text-slate-400 pt-2 border-t border-slate-800/60">
                   <div className="flex items-center gap-2">
                     <Users className="w-4 h-4 text-indigo-400" />
-                    <span>{course.alumnos?.length || 0} alumnos</span>
+                    <span>{course.alumnosCount ?? course.alumnos?.length ?? 0} alumnos</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4 text-indigo-400" />
@@ -125,7 +126,7 @@ export const CursosListaView: React.FC = () => {
                   onClick={() => handleOpenCourse(course.id)}
                   className="w-full py-2.5 bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white font-bold text-xs rounded-xl border border-slate-700 hover:border-indigo-500 transition-all flex items-center justify-center gap-2"
                 >
-                  <span>[ Abrir ]</span>
+                  <span> Abrir </span>
                   <ExternalLink className="w-3.5 h-3.5" />
                 </button>
               </div>
