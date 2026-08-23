@@ -1,17 +1,37 @@
 'use client';
 
-import React from 'react';
-import { useEvalia } from '../../context/EvaliaContext';
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { Plus, BookOpen, Users, FileText, ArrowRight, Sparkles } from 'lucide-react';
 
 export const DashboardView: React.FC = () => {
+  const router = useRouter();
   const { user } = useAuth();
-  const { courses, setScreen, setActiveCourseId } = useEvalia();
+
+  const [courses, setCourses] = useState<any[]>([]);
+
+  useEffect(() => {
+    // Fetch real courses instead of mock context
+    const fetchCourses = async () => {
+      try {
+        const res = await fetch('http://localhost:3000/api/v1/cursos', {
+          headers: { 'Authorization': 'Bearer test-token' },
+          cache: 'no-store'
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setCourses(data);
+        }
+      } catch (error) {
+        console.error('Error fetching courses:', error);
+      }
+    };
+    fetchCourses();
+  }, []);
 
   const handleOpenCourse = (courseId: string) => {
-    setActiveCourseId(courseId);
-    setScreen('curso_detalle');
+    router.push(`/cursos/${courseId}`);
   };
 
   return (
@@ -34,15 +54,15 @@ export const DashboardView: React.FC = () => {
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
             <button
-              onClick={() => setScreen('curso_nuevo')}
+              onClick={() => router.push('/cursos/nuevo')}
               className="py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
-              <span>+ Nuevo curso</span>
+              <span> Nuevo curso</span>
             </button>
 
             <button
-              onClick={() => setScreen('cursos_lista')}
+              onClick={() => router.push('/cursos')}
               className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition-all flex items-center gap-2"
             >
               <BookOpen className="w-4 h-4 text-indigo-400" />
@@ -52,7 +72,7 @@ export const DashboardView: React.FC = () => {
         </div>
       </div>
 
-      {/* Cursos Recientes Section (Wireframe 3) */}
+      {/* Cursos Recientes Section */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
@@ -60,7 +80,7 @@ export const DashboardView: React.FC = () => {
             Cursos Recientes
           </h2>
           <button
-            onClick={() => setScreen('cursos_lista')}
+            onClick={() => router.push('/cursos')}
             className="text-xs font-medium text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
           >
             Ver todos ({courses.length})
@@ -69,7 +89,7 @@ export const DashboardView: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {courses.map((course) => (
+          {courses.slice(0, 3).map((course) => (
             <div
               key={course.id}
               onClick={() => handleOpenCourse(course.id)}
@@ -78,27 +98,16 @@ export const DashboardView: React.FC = () => {
               <div className="space-y-3">
                 <div className="flex items-start justify-between">
                   <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-indigo-950 text-indigo-300 border border-indigo-800/40 rounded-md">
-                    Año Lectivo {course.anioLectivo}
+                    Año Lectivo {course.anioLectivo || new Date().getFullYear()}
                   </span>
                   <span className="text-xs font-medium text-slate-400">
-                    {course.anio} {course.division}
+                    {course.anio || ''} {course.division || ''}
                   </span>
                 </div>
 
                 <h3 className="text-lg font-bold text-white group-hover:text-indigo-300 transition-colors">
-                  {course.materia} - {course.anio}{course.division}
+                  {course.nombre || `${course.materia} ${course.anio || ''}${course.division || ''}`}
                 </h3>
-
-                <div className="flex items-center gap-4 text-xs text-slate-400 pt-1">
-                  <span className="flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-slate-500" />
-                    {course.alumnosCount || 0} alumnos
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-slate-500" />
-                    {course.examenesCount || 0} exámenes
-                  </span>
-                </div>
               </div>
 
               <div className="mt-5 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs font-semibold text-indigo-400 group-hover:text-indigo-300">
@@ -107,6 +116,17 @@ export const DashboardView: React.FC = () => {
               </div>
             </div>
           ))}
+          {courses.length === 0 && (
+            <div className="col-span-full py-8 text-center bg-slate-900/50 border border-slate-800 rounded-2xl">
+              <p className="text-sm text-slate-400">No tienes cursos creados todavía.</p>
+              <button
+                onClick={() => router.push('/cursos/nuevo')}
+                className="mt-3 text-xs font-bold text-indigo-400 hover:text-indigo-300"
+              >
+                ¡Creá tu primer curso!
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
