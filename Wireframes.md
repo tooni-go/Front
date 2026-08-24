@@ -27,7 +27,7 @@ Disponible en todas las pantallas (excepto Login).
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────┐
-│ EVALIA                                        👤 Juan Pérez ▼             │
+│ EVALIA                                        👤 Juan Pérez ▼              │
 ├───────────────┬────────────────────────────────────────────────────────────┤
 │ 🏠 Dashboard  │                                                            │
 │ 📚 Cursos     │                 Contenido                                  │
