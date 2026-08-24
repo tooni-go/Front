@@ -1,12 +1,17 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useEvalia } from '../../context/EvaliaContext';
 import { Sparkles, FileText, Upload, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
 
 export const ExamenInteligenteView: React.FC = () => {
-  const { setScreen, setPendingGeneratedExam, getActiveCourse } = useEvalia();
-  const course = getActiveCourse();
+  const { setPendingGeneratedExam, getCourseById, getExamById } = useEvalia();
+  const params = useParams<{ id: string }>();
+  const router = useRouter();
+  const exam = getExamById(params.id);
+  const course = getCourseById(exam?.courseId || params.id);
+  const wizardId = course?.id || params.id;
 
   const [modo, setModo] = useState<'texto' | 'archivo'>('texto');
   const [textoExamen, setTextoExamen] = useState('');
@@ -46,7 +51,7 @@ export const ExamenInteligenteView: React.FC = () => {
             preguntas: result.data.preguntas || [],
           });
           setIsGenerating(false);
-          setScreen('examen_revision_generado');
+          router.push(`/examenes/${wizardId}/revision`);
           return;
         }
       }
@@ -93,13 +98,13 @@ export const ExamenInteligenteView: React.FC = () => {
     });
 
     setIsGenerating(false);
-    setScreen('examen_revision_generado');
+    router.push(`/examenes/${wizardId}/revision`);
   };
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-200">
       <button
-        onClick={() => setScreen('examen_metodo')}
+        onClick={() => router.push(`/examenes/${wizardId}/metodo`)}
         className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
@@ -203,7 +208,7 @@ export const ExamenInteligenteView: React.FC = () => {
             ) : (
               <>
                 <Sparkles className="w-4 h-4" />
-                <span>[ Generar examen ]</span>
+                <span>Generar examen</span>
               </>
             )}
           </button>

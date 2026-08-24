@@ -1,17 +1,26 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { UserPlus, Save, X, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { fetchApi } from '@/src/lib/api';
 
 interface AlumnoFormViewProps {
   cursoId?: string;
   alumnoId?: string; // Si existe, estamos editando
 }
 
-export const NuevoAlumnoView: React.FC<AlumnoFormViewProps> = ({ cursoId, alumnoId }) => {
+export const NuevoAlumnoView: React.FC<AlumnoFormViewProps> = ({ 
+  cursoId: propCursoId, 
+  alumnoId: propAlumnoId 
+}) => {
   const router = useRouter();
+  const params = useParams<{ id?: string }>();
+  const searchParams = useSearchParams();
+
+  const alumnoId = propAlumnoId || params.id;
   const isEditing = Boolean(alumnoId);
+  const cursoId = propCursoId || searchParams.get('cursoId') || '';
 
   const [nombre, setNombre] = useState('');
   const [legajo, setLegajo] = useState('');
@@ -40,15 +49,10 @@ export const NuevoAlumnoView: React.FC<AlumnoFormViewProps> = ({ cursoId, alumno
     if (isEditing && alumnoId) {
       const fetchAlumno = async () => {
         try {
-          const res = await fetch(`http://localhost:3000/api/v1/alumnos/${alumnoId}`, {
-            headers: { 'Authorization': 'Bearer test-token' }
-          });
-          if (res.ok) {
-            const data = await res.json();
-            setNombre(data.nombre || '');
-            const rawLegajo = (data.legajo || '').replace(/\D/g, '');
-            setLegajo(rawLegajo);
-          }
+          const data = await fetchApi(`/api/v1/alumnos/${alumnoId}`);
+          setNombre(data.nombre || '');
+          const rawLegajo = (data.legajo || '').replace(/\D/g, '');
+          setLegajo(rawLegajo);
         } catch (error) {
           console.error('Error fetching alumno:', error);
         } finally {
@@ -91,42 +95,32 @@ export const NuevoAlumnoView: React.FC<AlumnoFormViewProps> = ({ cursoId, alumno
 
     try {
       const url = isEditing 
-        ? `http://localhost:3000/api/v1/alumnos/${alumnoId}` 
-        : `http://localhost:3000/api/v1/alumnos`;
+        ? `/api/v1/alumnos/${alumnoId}` 
+        : `/api/v1/alumnos`;
       
       const method = isEditing ? 'PUT' : 'POST';
       const body = isEditing 
         ? JSON.stringify({ nombre: nombre.trim(), legajo: legajo.trim() })
         : JSON.stringify({ nombre: nombre.trim(), legajo: legajo.trim(), cursoId });
 
-      const response = await fetch(url, {
+      await fetchApi(url, {
         method,
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer test-token' 
-        },
         body
       });
 
-      if (response.ok) {
-        setMessage({ type: 'success', text: isEditing ? 'Alumno actualizado exitosamente.' : 'Alumno registrado exitosamente.' });
-        router.refresh(); // Refresca el caché del cliente para que los componentes padre vean los cambios
+      setMessage({ type: 'success', text: isEditing ? 'Alumno actualizado exitosamente.' : 'Alumno registrado exitosamente.' });
+      router.refresh();
 
-        setTimeout(() => {
-          if (cursoId) {
-            router.push(`/cursos/${cursoId}`);
-          } else {
-            router.back();
-          }
-        }, 1500);
-      } else {
-        const errorData = await response.json();
-        const errorMsg = Array.isArray(errorData.message) ? errorData.message.join(', ') : errorData.message;
-        setMessage({ type: 'error', text: errorMsg || 'Error al guardar el alumno.' });
-      }
-    } catch (error) {
+      setTimeout(() => {
+        if (cursoId) {
+          router.push(`/cursos/${cursoId}`);
+        } else {
+          router.back();
+        }
+      }, 1500);
+    } catch (error: any) {
       console.error('Error saving alumno:', error);
-      setMessage({ type: 'error', text: 'Error de conexión con el servidor.' });
+      setMessage({ type: 'error', text: error.message || 'Error al guardar el alumno.' });
     } finally {
       setIsSaving(false);
     }
@@ -228,7 +222,7 @@ export const NuevoAlumnoView: React.FC<AlumnoFormViewProps> = ({ cursoId, alumno
             className="py-2.5 px-5 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-300 font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2"
           >
             <X className="w-4 h-4" />
-            <span>[ Cancelar ]</span>
+            <span>Cancelar</span>
           </button>
 
           <button
@@ -239,12 +233,12 @@ export const NuevoAlumnoView: React.FC<AlumnoFormViewProps> = ({ cursoId, alumno
             {isSaving ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>[ Guardando... ]</span>
+                <span>Guardando...</span>
               </>
             ) : (
               <>
                 <Save className="w-4 h-4" />
-                <span>[ Guardar ]</span>
+                <span>Guardar</span>
               </>
             )}
           </button>

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { Plus, BookOpen, Users, FileText, ArrowRight, Sparkles } from 'lucide-react';
+import { fetchApi } from '@/src/lib/api';
 
 export const DashboardView: React.FC = () => {
   const router = useRouter();
@@ -12,27 +13,18 @@ export const DashboardView: React.FC = () => {
   const [courses, setCourses] = useState<any[]>([]);
 
   useEffect(() => {
-    // Fetch real courses instead of mock context
     const fetchCourses = async () => {
       try {
-        const res = await fetch('http://localhost:3000/api/v1/cursos', {
-          headers: { 'Authorization': 'Bearer test-token' },
+        const data = await fetchApi('/api/v1/cursos', {
           cache: 'no-store'
         });
-        if (res.ok) {
-          const data = await res.json();
-          setCourses(data);
-        }
+        setCourses(data);
       } catch (error) {
         console.error('Error fetching courses:', error);
       }
     };
     fetchCourses();
   }, []);
-
-  const handleOpenCourse = (courseId: string) => {
-    router.push(`/cursos/${courseId}`);
-  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
@@ -68,6 +60,7 @@ export const DashboardView: React.FC = () => {
               <BookOpen className="w-4 h-4 text-indigo-400" />
               <span>Ver todos los cursos</span>
             </button>
+
           </div>
         </div>
       </div>
@@ -92,13 +85,13 @@ export const DashboardView: React.FC = () => {
           {courses.slice(0, 3).map((course) => (
             <div
               key={course.id}
-              onClick={() => handleOpenCourse(course.id)}
+              onClick={() => router.push(`/cursos/${course.id}`)}
               className="bg-slate-900/90 border border-slate-800 hover:border-indigo-500/50 rounded-2xl p-5 shadow-lg hover:shadow-indigo-500/10 transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div className="space-y-3">
                 <div className="flex items-start justify-between">
                   <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-indigo-950 text-indigo-300 border border-indigo-800/40 rounded-md">
-                    Año Lectivo {course.anioLectivo || new Date().getFullYear()}
+                     Año Lectivo {course.anioLectivo || new Date().getFullYear()}
                   </span>
                   <span className="text-xs font-medium text-slate-400">
                     {course.anio || ''} {course.division || ''}

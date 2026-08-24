@@ -1,14 +1,17 @@
 'use client';
 
 import React from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useEvalia } from '../../context/EvaliaContext';
 import { AlertTriangle, ArrowLeft, ChevronRight, Eye } from 'lucide-react';
 
 export const EntregaRevisionManualView: React.FC = () => {
-  const { getActiveDelivery, getActiveExam, setScreen } = useEvalia();
+  const { getDeliveryById, getExamById } = useEvalia();
+  const params = useParams<{ id: string }>();
+  const router = useRouter();
 
-  const delivery = getActiveDelivery();
-  const exam = getActiveExam();
+  const delivery = getDeliveryById(params.id);
+  const exam = delivery ? getExamById(delivery.examId) : undefined;
 
   if (!delivery) {
     return <div className="text-center py-10 text-slate-400">Entrega no encontrada.</div>;
@@ -17,7 +20,7 @@ export const EntregaRevisionManualView: React.FC = () => {
   return (
     <div className="max-w-xl mx-auto space-y-6 animate-in fade-in duration-200">
       <button
-        onClick={() => setScreen('examen_detalle')}
+        onClick={() => router.push(`/examenes/${exam?.id}`)}
         className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
@@ -67,11 +70,11 @@ export const EntregaRevisionManualView: React.FC = () => {
         {/* Action button (Wireframe 17) */}
         <div className="pt-2 flex justify-end">
           <button
-            onClick={() => setScreen('entrega_correccion_ia')}
+            onClick={() => router.push(`/entregas/${params.id}/correccion-ia`)}
             className="w-full py-3.5 bg-amber-600 hover:bg-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-amber-600/20 transition-all flex items-center justify-center gap-2"
           >
             <Eye className="w-4 h-4" />
-            <span>[ Revisar corrección ]</span>
+            <span>Revisar corrección</span>
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>

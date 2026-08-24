@@ -1,20 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEvalia } from '../../context/EvaliaContext';
 import { Plus, Search, Edit2, ArrowLeft, UserCheck } from 'lucide-react';
 
 export const AlumnosListaView: React.FC = () => {
-  const {
-    getActiveCourse,
-    getCourseStudents,
-    setScreen,
-    setEditingStudentId,
-  } = useEvalia();
+  const { getCourseById, getCourseStudents } = useEvalia();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const cursoId = searchParams.get('cursoId') || '';
 
   const [search, setSearch] = useState('');
 
-  const course = getActiveCourse();
+  const course = getCourseById(cursoId);
   if (!course) {
     return (
       <div className="text-center py-10 text-slate-400">
@@ -30,15 +29,10 @@ export const AlumnosListaView: React.FC = () => {
       s.legajo.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleEdit = (studentId: string) => {
-    setEditingStudentId(studentId);
-    setScreen('alumno_editar');
-  };
-
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       <button
-        onClick={() => setScreen('curso_detalle')}
+        onClick={() => router.push(`/cursos/${course.id}`)}
         className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
@@ -57,11 +51,11 @@ export const AlumnosListaView: React.FC = () => {
         </div>
 
         <button
-          onClick={() => setScreen('alumno_nuevo')}
+          onClick={() => router.push(`/alumnos/nuevo?cursoId=${course.id}`)}
           className="py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
-          <span>[ Nuevo alumno ]</span>
+          <span>+ Nuevo alumno</span>
         </button>
       </div>
 
@@ -101,11 +95,11 @@ export const AlumnosListaView: React.FC = () => {
                 </div>
 
                 <button
-                  onClick={() => handleEdit(student.id)}
+                  onClick={() => router.push(`/alumnos/${student.id}/editar`)}
                   className="py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-lg border border-slate-700 transition-all flex items-center gap-1.5"
                 >
                   <Edit2 className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>[ Editar ]</span>
+                  <span>Editar</span>
                 </button>
               </div>
             ))}

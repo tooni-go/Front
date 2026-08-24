@@ -1,16 +1,20 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Users, FileText, Plus, ArrowLeft, ChevronRight, Edit, Trash2 } from 'lucide-react';
-import Link from 'next/link';
+import { fetchApi } from '@/src/lib/api';
 
 interface CursoDetalleViewProps {
-  courseId: string;
+  courseId?: string;
 }
 
-export const CursoDetalleView: React.FC<CursoDetalleViewProps> = ({ courseId }) => {
+export const CursoDetalleView: React.FC<CursoDetalleViewProps> = ({ courseId: propCourseId }) => {
   const router = useRouter();
+  const params = useParams<{ id?: string }>();
+  
+  const courseId = propCourseId || params.id;
+
   const [course, setCourse] = useState<any>(null);
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,24 +23,13 @@ export const CursoDetalleView: React.FC<CursoDetalleViewProps> = ({ courseId }) 
     const fetchCourseData = async () => {
       setLoading(true);
       try {
-        // Obtenemos todos los cursos y filtramos el actual (esto se podría optimizar con un GET /cursos/:id si existiera)
-        const resCursos = await fetch('http://localhost:3000/api/v1/cursos', {
-          headers: { 'Authorization': 'Bearer test-token' }
-        });
-        if (resCursos.ok) {
-          const cursosData = await resCursos.json();
-          const foundCourse = cursosData.find((c: any) => c.id === courseId);
-          setCourse(foundCourse);
-        }
+        const cursosData = await fetchApi('/api/v1/cursos');
+        const foundCourse = cursosData.find((c: any) => c.id === courseId);
+        setCourse(foundCourse);
 
-        // Obtenemos los alumnos del curso
-        const resAlumnos = await fetch(`http://localhost:3000/api/v1/alumnos?cursoId=${courseId}&limit=100`, {
-          headers: { 'Authorization': 'Bearer test-token' }
-        });
-        if (resAlumnos.ok) {
-          const alumnosData = await resAlumnos.json();
-          setStudents(alumnosData.data || []);
-        }
+        const alumnosData = await fetchApi(`/api/v1/alumnos?cursoId=${courseId}&limit=100`);
+        // Soporta respuesta directa (array) o paginada { data: [...] }
+        setStudents(Array.isArray(alumnosData) ? alumnosData : (alumnosData.data || []));
       } catch (error) {
         console.error('Error fetching course data:', error);
       } finally {
@@ -51,20 +44,13 @@ export const CursoDetalleView: React.FC<CursoDetalleViewProps> = ({ courseId }) 
     if (!confirm('¿Estás seguro de eliminar este alumno?')) return;
 
     try {
-      const response = await fetch(`http://localhost:3000/api/v1/alumnos/${id}`, {
+      await fetchApi(`/api/v1/alumnos/${id}`, {
         method: 'DELETE',
-        headers: { 'Authorization': 'Bearer test-token' }
       });
-      if (response.ok) {
-        setStudents(students.filter(s => s.id !== id));
-      }
+      setStudents(students.filter(s => s.id !== id));
     } catch (error) {
-      console.error('Error deleting alumno', error);
+      console.error('Error deleting alumno:', error);
     }
-  };
-
-  const handleOpenExam = (examId: string) => {
-    router.push(`/examenes/${examId}`);
   };
 
   if (loading) {
@@ -77,7 +63,7 @@ export const CursoDetalleView: React.FC<CursoDetalleViewProps> = ({ courseId }) 
         <p className="text-slate-400 text-sm">Curso no encontrado.</p>
         <button
           onClick={() => router.push('/cursos')}
-          className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-500"
+          className="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all"
         >
           Volver a Cursos
         </button>
@@ -124,7 +110,7 @@ export const CursoDetalleView: React.FC<CursoDetalleViewProps> = ({ courseId }) 
         {/* Action buttons */}
         <div className="flex flex-wrap items-center gap-3 shrink-0">
           <button
-            onClick={() => router.push(`/cursos/${courseId}/alumnos/nuevo`)}
+            onClick={() => router.push(`/alumnos/nuevo?cursoId=${courseId}`)}
             className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2"
           >
             <Plus className="w-4 h-4 text-indigo-400" />
@@ -132,7 +118,7 @@ export const CursoDetalleView: React.FC<CursoDetalleViewProps> = ({ courseId }) 
           </button>
 
           <button
-            onClick={() => router.push(`/cursos/${courseId}/examenes/nuevo`)}
+            onClick={() => router.push(`/examenes/${courseId}/metodo`)}
             className="py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
@@ -151,10 +137,10 @@ export const CursoDetalleView: React.FC<CursoDetalleViewProps> = ({ courseId }) 
             </h2>
 
             <button
-              onClick={() => router.push(`/cursos/${courseId}/alumnos`)}
+              onClick={() => router.push(`/alumnos?cursoId=${courseId}`)}
               className="text-xs font-semibold text-indigo-400 hover:text-indigo-300"
             >
-              [ Ver todos ]
+              Ver todos
             </button>
           </div>
 
@@ -163,7 +149,7 @@ export const CursoDetalleView: React.FC<CursoDetalleViewProps> = ({ courseId }) 
               <Users className="w-8 h-8 text-slate-700 mb-2" />
               <p className="text-xs text-slate-400">El curso no tiene alumnos.</p>
               <button
-                onClick={() => router.push(`/cursos/${courseId}/alumnos/nuevo`)}
+                onClick={() => router.push(`/alumnos/nuevo?cursoId=${courseId}`)}
                 className="mt-3 px-3 py-1.5 bg-indigo-600/20 text-indigo-400 rounded-lg text-xs font-bold hover:bg-indigo-600/40"
               >
                 Añadir primer alumno
@@ -211,7 +197,7 @@ export const CursoDetalleView: React.FC<CursoDetalleViewProps> = ({ courseId }) 
             </h2>
 
             <button
-              onClick={() => router.push(`/cursos/${courseId}/examenes/nuevo`)}
+              onClick={() => router.push(`/examenes/${courseId}/metodo`)}
               className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -224,8 +210,8 @@ export const CursoDetalleView: React.FC<CursoDetalleViewProps> = ({ courseId }) 
               <FileText className="w-10 h-10 text-slate-700 mb-2" />
               <p className="text-xs text-slate-500 italic">No hay exámenes en este curso aún.</p>
               <button
-                onClick={() => router.push(`/cursos/${courseId}/examenes/nuevo`)}
-                className="py-2 px-4 bg-indigo-600 text-white rounded-xl text-xs font-bold"
+                onClick={() => router.push(`/examenes/${courseId}/metodo`)}
+                className="py-2 px-4 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-500 transition-all"
               >
                 Crear primer examen
               </button>
@@ -249,10 +235,10 @@ export const CursoDetalleView: React.FC<CursoDetalleViewProps> = ({ courseId }) 
                   </div>
 
                   <button
-                    onClick={() => handleOpenExam(exam.id)}
+                    onClick={() => router.push(`/examenes/${exam.id}`)}
                     className="py-2 px-4 bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center justify-center gap-2 shrink-0"
                   >
-                    <span>[ Abrir ]</span>
+                    <span>Abrir</span>
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>

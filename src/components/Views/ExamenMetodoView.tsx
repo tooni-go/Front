@@ -1,27 +1,32 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useEvalia } from '../../context/EvaliaContext';
 import { FileEdit, Sparkles, ArrowRight, ArrowLeft } from 'lucide-react';
 
 export const ExamenMetodoView: React.FC = () => {
-  const { setScreen, getActiveCourse } = useEvalia();
+  const { getCourseById, getExamById } = useEvalia();
+  const params = useParams<{ id: string }>();
+  const router = useRouter();
   const [metodo, setMetodo] = useState<'manual' | 'inteligente'>('inteligente');
 
-  const course = getActiveCourse();
+  const exam = getExamById(params.id);
+  const course = getCourseById(exam?.courseId || params.id);
+  const wizardId = exam?.courseId || params.id;
 
   const handleContinue = () => {
     if (metodo === 'manual') {
-      setScreen('examen_manual');
+      router.push(`/examenes/${wizardId}/manual`);
     } else {
-      setScreen('examen_inteligente');
+      router.push(`/examenes/${wizardId}/inteligente`);
     }
   };
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-200">
       <button
-        onClick={() => setScreen('curso_detalle')}
+        onClick={() => router.push(course ? `/cursos/${course.id}` : '/cursos')}
         className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
@@ -118,7 +123,7 @@ export const ExamenMetodoView: React.FC = () => {
             onClick={handleContinue}
             className="py-3 px-6 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2"
           >
-            <span>[ Continuar ]</span>
+            <span>Continuar</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

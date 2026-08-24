@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, BookOpen, Users, FileText, ExternalLink } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { fetchApi } from '@/src/lib/api';
 
 interface Course {
   id: string;
@@ -25,15 +25,8 @@ export const CursosListaView: React.FC = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/v1/cursos', {
-          headers: {
-            'Authorization': 'Bearer test-token' // Token provisorio MVP
-          }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setCourses(data);
-        }
+        const data = await fetchApi('/api/v1/cursos');
+        setCourses(data);
       } catch (error) {
         console.error('Error fetching courses:', error);
       } finally {

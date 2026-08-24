@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Save, X, BookPlus, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { fetchApi } from '@/src/lib/api';
 
 export const NuevoCursoView: React.FC = () => {
   const router = useRouter();
@@ -23,12 +24,8 @@ export const NuevoCursoView: React.FC = () => {
     setMessage(null);
 
     try {
-      const response = await fetch('http://localhost:3000/api/v1/cursos', {
+      await fetchApi('/api/v1/cursos', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer test-token'
-        },
         body: JSON.stringify({ 
           materia: materia.trim(), 
           nombre: `${materia.trim()} ${anio} ${division}`,
@@ -38,20 +35,15 @@ export const NuevoCursoView: React.FC = () => {
         })
       });
 
-      if (response.ok) {
-        setMessage({ type: 'success', text: 'Curso creado exitosamente.' });
-        router.refresh(); // Invalida el caché para que la lista de cursos se actualice
-        
-        setTimeout(() => {
-          router.push('/cursos');
-        }, 1500);
-      } else {
-        const errorData = await response.json();
-        setMessage({ type: 'error', text: errorData.message || 'Error al crear el curso.' });
-      }
-    } catch (error) {
+      setMessage({ type: 'success', text: 'Curso creado exitosamente.' });
+      router.refresh(); // Invalida el caché para que la lista de cursos se actualice
+      
+      setTimeout(() => {
+        router.push('/cursos');
+      }, 1500);
+    } catch (error: any) {
       console.error('Error al crear el curso:', error);
-      setMessage({ type: 'error', text: 'Error de conexión con el servidor.' });
+      setMessage({ type: 'error', text: error.message || 'Error al crear el curso.' });
     } finally {
       setIsLoading(false);
     }
@@ -153,7 +145,7 @@ export const NuevoCursoView: React.FC = () => {
             disabled={isLoading}
           >
             <X className="w-4 h-4" />
-            <span>[ Cancelar ]</span>
+            <span>Cancelar</span>
           </button>
 
           <button
@@ -164,12 +156,12 @@ export const NuevoCursoView: React.FC = () => {
             {isLoading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>[ Guardando... ]</span>
+                <span>Guardando...</span>
               </>
             ) : (
               <>
                 <Save className="w-4 h-4" />
-                <span>[ Guardar ]</span>
+                <span>Guardar</span>
               </>
             )}
           </button>
