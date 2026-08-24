@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useEvalia } from '../../context/EvaliaContext';
 import { Question } from '../../types/evalia';
 import { Save, Sparkles, Trash2, Plus, ArrowLeft } from 'lucide-react';
@@ -8,13 +9,15 @@ import { Save, Sparkles, Trash2, Plus, ArrowLeft } from 'lucide-react';
 export const ExamenRevisionGeneradoView: React.FC = () => {
   const {
     pendingGeneratedExam,
-    activeCourseId,
     saveExam,
-    setScreen,
-    getActiveCourse,
+    getCourseById,
+    getExamById,
   } = useEvalia();
-
-  const course = getActiveCourse();
+  const params = useParams<{ id: string }>();
+  const router = useRouter();
+  const exam = getExamById(params.id);
+  const course = getCourseById(exam?.courseId || params.id);
+  const courseId = course?.id;
 
   const [titulo, setTitulo] = useState(
     pendingGeneratedExam?.titulo || 'Examen Generado por IA'
@@ -71,21 +74,22 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
   );
 
   const handleSave = () => {
-    if (!activeCourseId || !titulo.trim()) return;
+    if (!courseId || !titulo.trim()) return;
 
-    saveExam({
-      courseId: activeCourseId,
+    const created = saveExam({
+      courseId,
       titulo: titulo.trim(),
       fecha,
       criteriosIA,
       preguntas,
     });
+    router.push(`/examenes/${created.id}`);
   };
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-200">
       <button
-        onClick={() => setScreen('examen_inteligente')}
+        onClick={() => router.push(`/examenes/${courseId || params.id}/inteligente`)}
         className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
@@ -217,7 +221,7 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
             className="w-full py-2.5 bg-slate-950 hover:bg-slate-800 text-indigo-400 font-bold text-xs rounded-xl border border-dashed border-slate-800 transition-all flex items-center justify-center gap-2"
           >
             <Plus className="w-4 h-4" />
-            <span>[ + Agregar pregunta ]</span>
+            <span>+ Agregar pregunta</span>
           </button>
         </div>
 
@@ -228,7 +232,7 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
             className="py-3 px-8 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2"
           >
             <Save className="w-4 h-4" />
-            <span>[ Guardar examen ]</span>
+            <span>Guardar examen</span>
           </button>
         </div>
       </div>

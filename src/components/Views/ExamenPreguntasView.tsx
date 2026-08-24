@@ -1,14 +1,17 @@
 'use client';
 
 import React from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useEvalia } from '../../context/EvaliaContext';
 import { AlertCircle, ArrowLeft, Edit3, Trash2, HelpCircle } from 'lucide-react';
 
 export const ExamenPreguntasView: React.FC = () => {
-  const { getActiveExam, getActiveCourse, setScreen } = useEvalia();
+  const { getExamById, getCourseById } = useEvalia();
+  const params = useParams<{ id: string }>();
+  const router = useRouter();
 
-  const exam = getActiveExam();
-  const course = getActiveCourse();
+  const exam = getExamById(params.id);
+  const course = exam ? getCourseById(exam.courseId) : undefined;
 
   if (!exam || !course) {
     return (
@@ -23,7 +26,7 @@ export const ExamenPreguntasView: React.FC = () => {
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-200">
       <button
-        onClick={() => setScreen('examen_detalle')}
+        onClick={() => router.push(`/examenes/${exam.id}`)}
         className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
       >
         <ArrowLeft className="w-3.5 h-3.5" />

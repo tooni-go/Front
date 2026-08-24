@@ -1,18 +1,16 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEvalia } from '../../context/EvaliaContext';
 import { useAuth } from '../../context/AuthContext';
 import { Plus, BookOpen, Users, FileText, ArrowRight, Sparkles } from 'lucide-react';
 
 export const DashboardView: React.FC = () => {
   const { user } = useAuth();
-  const { courses, setScreen, setActiveCourseId } = useEvalia();
-
-  const handleOpenCourse = (courseId: string) => {
-    setActiveCourseId(courseId);
-    setScreen('curso_detalle');
-  };
+  const { courses } = useEvalia();
+  const router = useRouter();
 
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
@@ -34,7 +32,7 @@ export const DashboardView: React.FC = () => {
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
             <button
-              onClick={() => setScreen('curso_nuevo')}
+              onClick={() => router.push('/cursos/nuevo')}
               className="py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
@@ -42,7 +40,7 @@ export const DashboardView: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setScreen('cursos_lista')}
+              onClick={() => router.push('/cursos')}
               className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition-all flex items-center gap-2"
             >
               <BookOpen className="w-4 h-4 text-indigo-400" />
@@ -59,20 +57,20 @@ export const DashboardView: React.FC = () => {
             <BookOpen className="w-5 h-5 text-indigo-400" />
             Cursos Recientes
           </h2>
-          <button
-            onClick={() => setScreen('cursos_lista')}
+          <Link
+            href="/cursos"
             className="text-xs font-medium text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
           >
             Ver todos ({courses.length})
             <ArrowRight className="w-3 h-3" />
-          </button>
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {courses.map((course) => (
             <div
               key={course.id}
-              onClick={() => handleOpenCourse(course.id)}
+              onClick={() => router.push(`/cursos/${course.id}`)}
               className="bg-slate-900/90 border border-slate-800 hover:border-indigo-500/50 rounded-2xl p-5 shadow-lg hover:shadow-indigo-500/10 transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div className="space-y-3">

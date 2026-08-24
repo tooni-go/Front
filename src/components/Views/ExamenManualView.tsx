@@ -1,13 +1,18 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useEvalia } from '../../context/EvaliaContext';
 import { Question } from '../../types/evalia';
 import { Plus, Trash2, Save, ArrowLeft, HelpCircle } from 'lucide-react';
 
 export const ExamenManualView: React.FC = () => {
-  const { activeCourseId, saveExam, setScreen, getActiveCourse } = useEvalia();
-  const course = getActiveCourse();
+  const { saveExam, getCourseById, getExamById } = useEvalia();
+  const params = useParams<{ id: string }>();
+  const router = useRouter();
+  const exam = getExamById(params.id);
+  const course = getCourseById(exam?.courseId || params.id);
+  const courseId = course?.id;
 
   const [titulo, setTitulo] = useState('Primer Parcial');
   const [fecha, setFecha] = useState(new Date().toLocaleDateString('es-ES'));
@@ -58,21 +63,22 @@ export const ExamenManualView: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeCourseId || !titulo.trim()) return;
+    if (!courseId || !titulo.trim()) return;
 
-    saveExam({
-      courseId: activeCourseId,
+    const created = saveExam({
+      courseId,
       titulo: titulo.trim(),
       fecha,
       criteriosIA,
       preguntas,
     });
+    router.push(`/examenes/${created.id}`);
   };
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-200">
       <button
-        onClick={() => setScreen('examen_metodo')}
+        onClick={() => router.push(`/examenes/${courseId || params.id}/metodo`)}
         className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
@@ -209,7 +215,7 @@ export const ExamenManualView: React.FC = () => {
             className="w-full py-3 bg-slate-950 hover:bg-slate-800 text-indigo-400 hover:text-indigo-300 font-bold text-xs rounded-2xl border border-dashed border-slate-800 hover:border-indigo-500 transition-all flex items-center justify-center gap-2"
           >
             <Plus className="w-4 h-4" />
-            <span>[ + Agregar otra pregunta ]</span>
+            <span>+ Agregar otra pregunta</span>
           </button>
         </div>
 
@@ -234,7 +240,7 @@ export const ExamenManualView: React.FC = () => {
             className="py-3 px-8 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2"
           >
             <Save className="w-4 h-4" />
-            <span>[ Guardar examen ]</span>
+            <span>Guardar examen</span>
           </button>
         </div>
       </form>

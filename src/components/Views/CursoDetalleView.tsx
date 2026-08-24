@@ -1,25 +1,22 @@
 'use client';
 
 import React from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useEvalia } from '../../context/EvaliaContext';
-import { Users, FileText, Plus, ArrowRight, ArrowLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import { Users, FileText, Plus, ArrowLeft, ChevronRight } from 'lucide-react';
 
 export const CursoDetalleView: React.FC = () => {
-  const {
-    getActiveCourse,
-    getCourseStudents,
-    getCourseExams,
-    setScreen,
-    setActiveExamId,
-  } = useEvalia();
+  const { getCourseById, getCourseStudents, getCourseExams } = useEvalia();
+  const params = useParams<{ id: string }>();
+  const router = useRouter();
 
-  const course = getActiveCourse();
+  const course = getCourseById(params.id);
   if (!course) {
     return (
       <div className="text-center py-12">
         <p className="text-slate-400 text-sm">Curso no encontrado.</p>
         <button
-          onClick={() => setScreen('cursos_lista')}
+          onClick={() => router.push('/cursos')}
           className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold"
         >
           Volver a Cursos
@@ -31,16 +28,11 @@ export const CursoDetalleView: React.FC = () => {
   const students = getCourseStudents(course.id);
   const exams = getCourseExams(course.id);
 
-  const handleOpenExam = (examId: string) => {
-    setActiveExamId(examId);
-    setScreen('examen_detalle');
-  };
-
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
       {/* Back button */}
       <button
-        onClick={() => setScreen('cursos_lista')}
+        onClick={() => router.push('/cursos')}
         className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
@@ -73,19 +65,19 @@ export const CursoDetalleView: React.FC = () => {
         {/* Action buttons matching Wireframe 6 */}
         <div className="flex flex-wrap items-center gap-3 shrink-0">
           <button
-            onClick={() => setScreen('alumno_nuevo')}
+            onClick={() => router.push(`/alumnos/nuevo?cursoId=${course.id}`)}
             className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2"
           >
             <Plus className="w-4 h-4 text-indigo-400" />
-            <span>[ + Nuevo alumno ]</span>
+            <span>+ Nuevo alumno</span>
           </button>
 
           <button
-            onClick={() => setScreen('examen_metodo')}
+            onClick={() => router.push(`/examenes/${course.id}/metodo`)}
             className="py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
-            <span>[ + Nuevo examen ]</span>
+            <span>+ Nuevo examen</span>
           </button>
         </div>
       </div>
@@ -100,10 +92,10 @@ export const CursoDetalleView: React.FC = () => {
             </h2>
 
             <button
-              onClick={() => setScreen('alumnos_lista')}
+              onClick={() => router.push(`/alumnos?cursoId=${course.id}`)}
               className="text-xs font-semibold text-indigo-400 hover:text-indigo-300"
             >
-              [ Ver todos ]
+              Ver todos
             </button>
           </div>
 
@@ -137,7 +129,7 @@ export const CursoDetalleView: React.FC = () => {
             </h2>
 
             <button
-              onClick={() => setScreen('examen_metodo')}
+              onClick={() => router.push(`/examenes/${course.id}/metodo`)}
               className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -149,7 +141,7 @@ export const CursoDetalleView: React.FC = () => {
             <div className="text-center py-8 space-y-3">
               <p className="text-xs text-slate-500 italic">No hay exámenes en este curso aún.</p>
               <button
-                onClick={() => setScreen('examen_metodo')}
+                onClick={() => router.push(`/examenes/${course.id}/metodo`)}
                 className="py-2 px-4 bg-indigo-600 text-white rounded-xl text-xs font-bold"
               >
                 Crear primer examen
@@ -178,10 +170,10 @@ export const CursoDetalleView: React.FC = () => {
                   </div>
 
                   <button
-                    onClick={() => handleOpenExam(exam.id)}
+                    onClick={() => router.push(`/examenes/${exam.id}`)}
                     className="py-2 px-4 bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center justify-center gap-2 shrink-0"
                   >
-                    <span>[ Abrir ]</span>
+                    <span>Abrir</span>
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>

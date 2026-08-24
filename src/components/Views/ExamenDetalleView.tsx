@@ -1,20 +1,17 @@
 'use client';
 
 import React from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useEvalia } from '../../context/EvaliaContext';
 import { FileText, Calendar, HelpCircle, Award, Upload, Eye, CheckCircle2, Clock, AlertTriangle, ArrowLeft, ChevronRight } from 'lucide-react';
 
 export const ExamenDetalleView: React.FC = () => {
-  const {
-    getActiveExam,
-    getActiveCourse,
-    getExamDeliveries,
-    setScreen,
-    setActiveDeliveryId,
-  } = useEvalia();
+  const { getExamById, getCourseById, getExamDeliveries } = useEvalia();
+  const params = useParams<{ id: string }>();
+  const router = useRouter();
 
-  const exam = getActiveExam();
-  const course = getActiveCourse();
+  const exam = getExamById(params.id);
+  const course = exam ? getCourseById(exam.courseId) : undefined;
 
   if (!exam || !course) {
     return (
@@ -27,18 +24,17 @@ export const ExamenDetalleView: React.FC = () => {
   const deliveries = getExamDeliveries(exam.id);
 
   const handleOpenDelivery = (deliveryId: string, estado: string) => {
-    setActiveDeliveryId(deliveryId);
     if (estado === 'Revisión') {
-      setScreen('entrega_revision_manual');
+      router.push(`/entregas/${deliveryId}/revision-manual`);
     } else {
-      setScreen('entrega_correccion_ia');
+      router.push(`/entregas/${deliveryId}/correccion-ia`);
     }
   };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
       <button
-        onClick={() => setScreen('curso_detalle')}
+        onClick={() => router.push(`/cursos/${course.id}`)}
         className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
@@ -60,19 +56,19 @@ export const ExamenDetalleView: React.FC = () => {
           {/* Action buttons (Wireframe 9) */}
           <div className="flex flex-wrap items-center gap-3">
             <button
-              onClick={() => setScreen('examen_preguntas')}
+              onClick={() => router.push(`/examenes/${exam.id}/preguntas`)}
               className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2"
             >
               <Eye className="w-4 h-4 text-indigo-400" />
-              <span>[ Ver preguntas ]</span>
+              <span>Ver preguntas</span>
             </button>
 
             <button
-              onClick={() => setScreen('entrega_nueva')}
+              onClick={() => router.push(`/entregas/nueva?examenId=${exam.id}`)}
               className="py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2"
             >
               <Upload className="w-4 h-4" />
-              <span>[ Nueva entrega ]</span>
+              <span>Nueva entrega</span>
             </button>
           </div>
         </div>
@@ -122,7 +118,7 @@ export const ExamenDetalleView: React.FC = () => {
           </h2>
 
           <button
-            onClick={() => setScreen('entrega_nueva')}
+            onClick={() => router.push(`/entregas/nueva?examenId=${exam.id}`)}
             className="text-xs font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
           >
             <Upload className="w-3.5 h-3.5" />
@@ -134,7 +130,7 @@ export const ExamenDetalleView: React.FC = () => {
           <div className="text-center py-8 space-y-3">
             <p className="text-xs text-slate-500 italic">No se han registrado entregas para este examen aún.</p>
             <button
-              onClick={() => setScreen('entrega_nueva')}
+              onClick={() => router.push(`/entregas/nueva?examenId=${exam.id}`)}
               className="py-2 px-4 bg-indigo-600 text-white rounded-xl text-xs font-bold"
             >
               Cargar primera entrega
@@ -183,7 +179,7 @@ export const ExamenDetalleView: React.FC = () => {
                     onClick={() => handleOpenDelivery(delivery.id, delivery.estado)}
                     className="py-2 px-3.5 bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-1"
                   >
-                    <span>[ Abrir ]</span>
+                    <span>Abrir</span>
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>

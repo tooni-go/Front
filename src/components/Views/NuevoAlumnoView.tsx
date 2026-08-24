@@ -1,21 +1,20 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useEvalia } from '../../context/EvaliaContext';
 import { UserPlus, Save, X } from 'lucide-react';
 
 export const NuevoAlumnoView: React.FC = () => {
-  const {
-    activeCourseId,
-    students,
-    editingStudentId,
-    addStudent,
-    updateStudent,
-    setScreen,
-  } = useEvalia();
+  const { students, addStudent, updateStudent } = useEvalia();
+  const router = useRouter();
+  const params = useParams<{ id?: string }>();
+  const searchParams = useSearchParams();
 
-  const isEditing = Boolean(editingStudentId);
-  const editingStudent = students.find((s) => s.id === editingStudentId);
+  const studentId = params.id;
+  const isEditing = Boolean(studentId);
+  const editingStudent = students.find((s) => s.id === studentId);
+  const courseId = editingStudent?.courseId || searchParams.get('cursoId') || '';
 
   const [nombre, setNombre] = useState('');
   const [legajo, setLegajo] = useState('');
@@ -30,17 +29,25 @@ export const NuevoAlumnoView: React.FC = () => {
     }
   }, [isEditing, editingStudent]);
 
+  const goToAlumnosLista = () => {
+    if (courseId) {
+      router.push(`/alumnos?cursoId=${courseId}`);
+    } else {
+      router.push('/alumnos');
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!nombre.trim() || !legajo.trim()) return;
 
-    if (isEditing && editingStudentId) {
-      updateStudent(editingStudentId, nombre.trim(), legajo.trim());
-    } else if (activeCourseId) {
-      addStudent(activeCourseId, nombre.trim(), legajo.trim());
+    if (isEditing && studentId) {
+      updateStudent(studentId, nombre.trim(), legajo.trim());
+    } else if (courseId) {
+      addStudent(courseId, nombre.trim(), legajo.trim());
     }
 
-    setScreen('alumnos_lista');
+    goToAlumnosLista();
   };
 
   return (
@@ -89,11 +96,11 @@ export const NuevoAlumnoView: React.FC = () => {
         <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-800">
           <button
             type="button"
-            onClick={() => setScreen('alumnos_lista')}
+            onClick={goToAlumnosLista}
             className="py-2.5 px-5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2"
           >
             <X className="w-4 h-4" />
-            <span>[ Cancelar ]</span>
+            <span>Cancelar</span>
           </button>
 
           <button
@@ -101,7 +108,7 @@ export const NuevoAlumnoView: React.FC = () => {
             className="py-2.5 px-5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2"
           >
             <Save className="w-4 h-4" />
-            <span>[ Guardar ]</span>
+            <span>Guardar</span>
           </button>
         </div>
       </form>

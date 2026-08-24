@@ -1,16 +1,13 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { useEvalia } from '../../context/EvaliaContext';
 import { Plus, BookOpen, Users, FileText, ExternalLink } from 'lucide-react';
 
 export const CursosListaView: React.FC = () => {
-  const { courses, setScreen, setActiveCourseId } = useEvalia();
-
-  const handleOpenCourse = (courseId: string) => {
-    setActiveCourseId(courseId);
-    setScreen('curso_detalle');
-  };
+  const { courses } = useEvalia();
+  const router = useRouter();
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
@@ -24,7 +21,7 @@ export const CursosListaView: React.FC = () => {
         </div>
 
         <button
-          onClick={() => setScreen('curso_nuevo')}
+          onClick={() => router.push('/cursos/nuevo')}
           className="py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
@@ -69,10 +66,10 @@ export const CursosListaView: React.FC = () => {
 
             <div className="pt-6">
               <button
-                onClick={() => handleOpenCourse(course.id)}
+                onClick={() => router.push(`/cursos/${course.id}`)}
                 className="w-full py-2.5 bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white font-bold text-xs rounded-xl border border-slate-700 hover:border-indigo-500 transition-all flex items-center justify-center gap-2"
               >
-                <span>[ Abrir ]</span>
+                <span>Abrir</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </button>
             </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { Course, Student, Exam, Delivery, Question } from '../types/evalia';
 import { INITIAL_COURSES, INITIAL_STUDENTS, INITIAL_EXAMS, INITIAL_DELIVERIES } from '../data/initialEvaliaData';
 
@@ -52,7 +52,7 @@ interface EvaliaContextType {
   addCourse: (materia: string, anio: string, division: string, anioLectivo: string) => Course;
   addStudent: (courseId: string, nombre: string, legajo: string) => void;
   updateStudent: (studentId: string, nombre: string, legajo: string) => void;
-  saveExam: (examData: Omit<Exam, 'id' | 'preguntasCount' | 'puntajeTotal' | 'entregasCount'>) => void;
+  saveExam: (examData: Omit<Exam, 'id' | 'preguntasCount' | 'puntajeTotal' | 'entregasCount'>) => Exam;
   updateExamQuestions: (examId: string, preguntas: Question[]) => void;
   
   // Delivery Actions
@@ -63,6 +63,9 @@ interface EvaliaContextType {
   getActiveCourse: () => Course | undefined;
   getActiveExam: () => Exam | undefined;
   getActiveDelivery: () => Delivery | undefined;
+  getCourseById: (id: string) => Course | undefined;
+  getExamById: (id: string) => Exam | undefined;
+  getDeliveryById: (id: string) => Delivery | undefined;
   getCourseStudents: (courseId: string) => Student[];
   getCourseExams: (courseId: string) => Exam[];
   getExamDeliveries: (examId: string) => Delivery[];
@@ -78,63 +81,78 @@ export const EvaliaProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [activeDeliveryId, setActiveDeliveryId] = useState<string | null>('del-1');
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
 
-  const [courses, setCourses] = useState<Course[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('evalia_courses');
-      return saved ? JSON.parse(saved) : INITIAL_COURSES;
-    }
-    return INITIAL_COURSES;
-  });
-
-  const [students, setStudents] = useState<Student[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('evalia_students');
-      return saved ? JSON.parse(saved) : INITIAL_STUDENTS;
-    }
-    return INITIAL_STUDENTS;
-  });
-
-  const [exams, setExams] = useState<Exam[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('evalia_exams');
-      return saved ? JSON.parse(saved) : INITIAL_EXAMS;
-    }
-    return INITIAL_EXAMS;
-  });
-
-  const [deliveries, setDeliveries] = useState<Delivery[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('evalia_deliveries');
-      return saved ? JSON.parse(saved) : INITIAL_DELIVERIES;
-    }
-    return INITIAL_DELIVERIES;
-  });
+  const [courses, setCourses] = useState<Course[]>(INITIAL_COURSES);
+  const [students, setStudents] = useState<Student[]>(INITIAL_STUDENTS);
+  const [exams, setExams] = useState<Exam[]>(INITIAL_EXAMS);
+  const [deliveries, setDeliveries] = useState<Delivery[]>(INITIAL_DELIVERIES);
 
   const [pendingGeneratedExam, setPendingGeneratedExam] = useState<Partial<Exam> | null>(null);
 
+  // Load from localstorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('evalia_courses');
+    if (saved) {
+      setCourses(JSON.parse(saved));
+    }
+  }, []);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('evalia_students');
+    if (saved) {
+      setStudents(JSON.parse(saved));
+    }
+  }, []);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('evalia_exams');
+    if (saved) {
+      setExams(JSON.parse(saved));
+    }
+  }, []);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('evalia_deliveries');
+    if (saved) {
+      setDeliveries(JSON.parse(saved));
+    }
+  }, []);
+
+  const isFirstCoursesSave = useRef(true);
+  const isFirstStudentsSave = useRef(true);
+  const isFirstExamsSave = useRef(true);
+  const isFirstDeliveriesSave = useRef(true);
+
   // Sync to localstorage
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('evalia_courses', JSON.stringify(courses));
+    if (isFirstCoursesSave.current) {
+      isFirstCoursesSave.current = false;
+      return;
     }
+    localStorage.setItem('evalia_courses', JSON.stringify(courses));
   }, [courses]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('evalia_students', JSON.stringify(students));
+    if (isFirstStudentsSave.current) {
+      isFirstStudentsSave.current = false;
+      return;
     }
+    localStorage.setItem('evalia_students', JSON.stringify(students));
   }, [students]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('evalia_exams', JSON.stringify(exams));
+    if (isFirstExamsSave.current) {
+      isFirstExamsSave.current = false;
+      return;
     }
+    localStorage.setItem('evalia_exams', JSON.stringify(exams));
   }, [exams]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('evalia_deliveries', JSON.stringify(deliveries));
+    if (isFirstDeliveriesSave.current) {
+      isFirstDeliveriesSave.current = false;
+      return;
     }
+    localStorage.setItem('evalia_deliveries', JSON.stringify(deliveries));
   }, [deliveries]);
 
   // Actions
@@ -174,7 +192,7 @@ export const EvaliaProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     );
   };
 
-  const saveExam = (examData: Omit<Exam, 'id' | 'preguntasCount' | 'puntajeTotal' | 'entregasCount'>) => {
+  const saveExam = (examData: Omit<Exam, 'id' | 'preguntasCount' | 'puntajeTotal' | 'entregasCount'>): Exam => {
     const puntajeTotal = examData.preguntas.reduce((sum, q) => sum + (q.puntajeMaximo || 0), 0);
     const newExam: Exam = {
       ...examData,
@@ -194,6 +212,7 @@ export const EvaliaProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     setActiveExamId(newExam.id);
     setScreen('examen_detalle');
+    return newExam;
   };
 
   const updateExamQuestions = (examId: string, preguntas: Question[]) => {
@@ -333,6 +352,9 @@ export const EvaliaProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const getActiveCourse = () => courses.find((c) => c.id === activeCourseId);
   const getActiveExam = () => exams.find((e) => e.id === activeExamId);
   const getActiveDelivery = () => deliveries.find((d) => d.id === activeDeliveryId);
+  const getCourseById = (id: string) => courses.find((c) => c.id === id);
+  const getExamById = (id: string) => exams.find((e) => e.id === id);
+  const getDeliveryById = (id: string) => deliveries.find((d) => d.id === id);
 
   const getCourseStudents = (courseId: string) =>
     students.filter((s) => s.courseId === courseId);
@@ -372,6 +394,9 @@ export const EvaliaProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         getActiveCourse,
         getActiveExam,
         getActiveDelivery,
+        getCourseById,
+        getExamById,
+        getDeliveryById,
         getCourseStudents,
         getCourseExams,
         getExamDeliveries,

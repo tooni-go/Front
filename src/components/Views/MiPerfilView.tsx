@@ -65,7 +65,7 @@ export const MiPerfilView: React.FC = () => {
             className="w-full py-3 bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 font-bold text-xs rounded-xl border border-rose-800/50 transition-all flex items-center justify-center gap-2"
           >
             <LogOut className="w-4 h-4" />
-            <span>[ Cerrar sesión ]</span>
+            <span>Cerrar sesión</span>
           </button>
         </div>
       </div>

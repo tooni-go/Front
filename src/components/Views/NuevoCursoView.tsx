@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useEvalia } from '../../context/EvaliaContext';
 import { Save, X, BookPlus } from 'lucide-react';
 
 export const NuevoCursoView: React.FC = () => {
-  const { addCourse, setScreen, setActiveCourseId } = useEvalia();
+  const { addCourse } = useEvalia();
+  const router = useRouter();
 
   const [materia, setMateria] = useState('');
   const [anio, setAnio] = useState('2°');
@@ -17,8 +19,7 @@ export const NuevoCursoView: React.FC = () => {
     if (!materia.trim()) return;
 
     const created = addCourse(materia.trim(), anio, division, anioLectivo);
-    setActiveCourseId(created.id);
-    setScreen('curso_detalle');
+    router.push(`/cursos/${created.id}`);
   };
 
   return (
@@ -97,11 +98,11 @@ export const NuevoCursoView: React.FC = () => {
         <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-800">
           <button
             type="button"
-            onClick={() => setScreen('cursos_lista')}
+            onClick={() => router.push('/cursos')}
             className="py-2.5 px-5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2"
           >
             <X className="w-4 h-4" />
-            <span>[ Cancelar ]</span>
+            <span>Cancelar</span>
           </button>
 
           <button
@@ -109,7 +110,7 @@ export const NuevoCursoView: React.FC = () => {
             className="py-2.5 px-5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2"
           >
             <Save className="w-4 h-4" />
-            <span>[ Guardar ]</span>
+            <span>Guardar</span>
           </button>
         </div>
       </form>
