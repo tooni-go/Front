@@ -2,7 +2,31 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { Course, Student, Exam, Delivery, Question } from '../types/evalia';
-import { INITIAL_COURSES, INITIAL_STUDENTS, INITIAL_EXAMS, INITIAL_DELIVERIES } from '../data/initialEvaliaData';
+import { INITIAL_STUDENTS, INITIAL_EXAMS, INITIAL_DELIVERIES } from '../data/initialEvaliaData';
+import { fetchApi } from '../lib/api';
+
+interface BackendCourse {
+  id: string;
+  materia: string;
+  anio: number;
+  division: string;
+  anioLectivo: number;
+  profesorId?: string;
+  alumnos?: any[];
+  _count?: { examenes: number };
+}
+
+function mapBackendCourse(bc: BackendCourse): Course {
+  return {
+    id: bc.id,
+    materia: bc.materia,
+    anio: `${bc.anio}°`,
+    division: bc.division,
+    anioLectivo: String(bc.anioLectivo),
+    alumnosCount: Array.isArray(bc.alumnos) ? bc.alumnos.length : 0,
+    examenesCount: bc._count?.examenes ?? 0,
+  };
+}
 
 export type Screen = 
   | 'dashboard'
@@ -40,6 +64,7 @@ interface EvaliaContextType {
   
   // Data Collections
   courses: Course[];
+  isLoadingCourses: boolean;
   students: Student[];
   exams: Exam[];
   deliveries: Delivery[];
@@ -49,7 +74,7 @@ interface EvaliaContextType {
   setPendingGeneratedExam: (exam: Partial<Exam> | null) => void;
 
   // Actions
-  addCourse: (materia: string, anio: string, division: string, anioLectivo: string) => Course;
+  addCourse: (materia: string, anio: string, division: string, anioLectivo: string) => Promise<Course>;
   addStudent: (courseId: string, nombre: string, legajo: string) => void;
   updateStudent: (studentId: string, nombre: string, legajo: string) => void;
   saveExam: (examData: Omit<Exam, 'id' | 'preguntasCount' | 'puntajeTotal' | 'entregasCount'>) => Exam;
@@ -76,24 +101,34 @@ const EvaliaContext = createContext<EvaliaContextType | undefined>(undefined);
 export const EvaliaProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [screen, setScreen] = useState<Screen>('dashboard');
   
-  const [activeCourseId, setActiveCourseId] = useState<string | null>('c-mat-2a');
-  const [activeExamId, setActiveExamId] = useState<string | null>('ex-1');
-  const [activeDeliveryId, setActiveDeliveryId] = useState<string | null>('del-1');
+  const [activeCourseId, setActiveCourseId] = useState<string | null>(null);
+  const [activeExamId, setActiveExamId] = useState<string | null>(null);
+  const [activeDeliveryId, setActiveDeliveryId] = useState<string | null>(null);
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
 
-  const [courses, setCourses] = useState<Course[]>(INITIAL_COURSES);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [isLoadingCourses, setIsLoadingCourses] = useState(true);
   const [students, setStudents] = useState<Student[]>(INITIAL_STUDENTS);
   const [exams, setExams] = useState<Exam[]>(INITIAL_EXAMS);
   const [deliveries, setDeliveries] = useState<Delivery[]>(INITIAL_DELIVERIES);
 
   const [pendingGeneratedExam, setPendingGeneratedExam] = useState<Partial<Exam> | null>(null);
 
-  // Load from localstorage on mount
+  // Carga de cursos desde el backend (fuente de verdad)
   useEffect(() => {
-    const saved = localStorage.getItem('evalia_courses');
-    if (saved) {
-      setCourses(JSON.parse(saved));
-    }
+    setIsLoadingCourses(true);
+    fetchApi<BackendCourse[]>('/api/v1/cursos')
+      .then((data) => {
+        setCourses(data.map(mapBackendCourse));
+      })
+      .catch((err) => {
+        console.warn('No se pudieron cargar los cursos desde el backend:', err);
+        // Fallback: limpiar cualquier dato viejo de localStorage
+        setCourses([]);
+      })
+      .finally(() => {
+        setIsLoadingCourses(false);
+      });
   }, []);
 
   useEffect(() => {
@@ -117,19 +152,12 @@ export const EvaliaProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, []);
 
-  const isFirstCoursesSave = useRef(true);
   const isFirstStudentsSave = useRef(true);
   const isFirstExamsSave = useRef(true);
   const isFirstDeliveriesSave = useRef(true);
 
-  // Sync to localstorage
-  useEffect(() => {
-    if (isFirstCoursesSave.current) {
-      isFirstCoursesSave.current = false;
-      return;
-    }
-    localStorage.setItem('evalia_courses', JSON.stringify(courses));
-  }, [courses]);
+
+  // Sync to localstorage (solo students, exams, deliveries — courses vienen del backend)
 
   useEffect(() => {
     if (isFirstStudentsSave.current) {
@@ -156,16 +184,16 @@ export const EvaliaProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [deliveries]);
 
   // Actions
-  const addCourse = (materia: string, anio: string, division: string, anioLectivo: string): Course => {
-    const newCourse: Course = {
-      id: `c-${Date.now().toString().slice(-4)}`,
-      materia,
-      anio,
-      division,
-      anioLectivo,
-      alumnosCount: 0,
-      examenesCount: 0,
-    };
+  const addCourse = async (materia: string, anio: string, division: string, anioLectivo: string): Promise<Course> => {
+    const anioNum = parseInt(anio.replace(/\D/g, ''), 10) || 1;
+    const anioLectivoNum = parseInt(anioLectivo, 10) || new Date().getFullYear();
+
+    const created = await fetchApi<BackendCourse>('/api/v1/cursos', {
+      method: 'POST',
+      body: JSON.stringify({ materia, anio: anioNum, division, anioLectivo: anioLectivoNum }),
+    });
+
+    const newCourse = mapBackendCourse(created);
     setCourses((prev) => [newCourse, ...prev]);
     return newCourse;
   };
@@ -379,6 +407,7 @@ export const EvaliaProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         editingStudentId,
         setEditingStudentId,
         courses,
+        isLoadingCourses,
         students,
         exams,
         deliveries,
