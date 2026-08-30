@@ -2,53 +2,146 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { useEvalia } from '../../context/EvaliaContext';
-import { UserPlus, Save, X } from 'lucide-react';
+import { UserPlus, Save, X, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { fetchApi } from '@/src/lib/api';
 
-export const NuevoAlumnoView: React.FC = () => {
-  const { students, addStudent, updateStudent } = useEvalia();
+interface AlumnoFormViewProps {
+  cursoId?: string;
+  alumnoId?: string; // Si existe, estamos editando
+}
+
+export const NuevoAlumnoView: React.FC<AlumnoFormViewProps> = ({ 
+  cursoId: propCursoId, 
+  alumnoId: propAlumnoId 
+}) => {
   const router = useRouter();
   const params = useParams<{ id?: string }>();
   const searchParams = useSearchParams();
 
-  const studentId = params.id;
-  const isEditing = Boolean(studentId);
-  const editingStudent = students.find((s) => s.id === studentId);
-  const courseId = editingStudent?.courseId || searchParams.get('cursoId') || '';
+  const alumnoId = propAlumnoId || params.id;
+  const isEditing = Boolean(alumnoId);
+  const cursoId = propCursoId || searchParams.get('cursoId') || '';
 
   const [nombre, setNombre] = useState('');
   const [legajo, setLegajo] = useState('');
+  const [legajoTouched, setLegajoTouched] = useState(false);
+  const [legajoError, setLegajoError] = useState<string | null>(null);
+  
+  const [isFetching, setIsFetching] = useState(isEditing);
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+  // Validador de DNI / Legajo
+  const validateLegajo = (value: string): string | null => {
+    if (!value) {
+      return 'El DNI / Legajo es obligatorio';
+    }
+    if (!/^\d+$/.test(value)) {
+      return 'El campo solo debe contener números (sin puntos ni letras)';
+    }
+    if (value.length < 7 || value.length > 8) {
+      return 'El DNI debe tener 7 u 8 números';
+    }
+    return null;
+  };
 
   useEffect(() => {
-    if (isEditing && editingStudent) {
-      setNombre(editingStudent.nombre);
-      setLegajo(editingStudent.legajo);
-    } else {
-      setNombre('');
-      setLegajo('');
+    if (isEditing && alumnoId) {
+      const fetchAlumno = async () => {
+        try {
+          const data = await fetchApi(`/api/v1/alumnos/${alumnoId}`);
+          setNombre(data.nombre || '');
+          const rawLegajo = (data.legajo || '').replace(/\D/g, '');
+          setLegajo(rawLegajo);
+        } catch (error) {
+          console.error('Error fetching alumno:', error);
+        } finally {
+          setIsFetching(false);
+        }
+      };
+      fetchAlumno();
     }
-  }, [isEditing, editingStudent]);
+  }, [isEditing, alumnoId]);
 
-  const goToAlumnosLista = () => {
-    if (courseId) {
-      router.push(`/alumnos?cursoId=${courseId}`);
-    } else {
-      router.push('/alumnos');
+  const handleLegajoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Solo permitimos dígitos numéricos y máximo 8 caracteres
+    const numericValue = e.target.value.replace(/\D/g, '').slice(0, 8);
+    setLegajo(numericValue);
+    
+    if (legajoTouched || numericValue.length > 0) {
+      setLegajoError(validateLegajo(numericValue));
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleLegajoBlur = () => {
+    setLegajoTouched(true);
+    setLegajoError(validateLegajo(legajo));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nombre.trim() || !legajo.trim()) return;
-
-    if (isEditing && studentId) {
-      updateStudent(studentId, nombre.trim(), legajo.trim());
-    } else if (courseId) {
-      addStudent(courseId, nombre.trim(), legajo.trim());
+    setLegajoTouched(true);
+    
+    const error = validateLegajo(legajo);
+    if (error) {
+      setLegajoError(error);
+      return;
     }
 
-    goToAlumnosLista();
+    if (!nombre.trim()) return;
+
+    setIsSaving(true);
+    setMessage(null);
+
+    try {
+      const url = isEditing 
+        ? `/api/v1/alumnos/${alumnoId}` 
+        : `/api/v1/alumnos`;
+      
+      const method = isEditing ? 'PUT' : 'POST';
+      const body = isEditing 
+        ? JSON.stringify({ nombre: nombre.trim(), legajo: legajo.trim() })
+        : JSON.stringify({ nombre: nombre.trim(), legajo: legajo.trim(), cursoId });
+
+      await fetchApi(url, {
+        method,
+        body
+      });
+
+      setMessage({ type: 'success', text: isEditing ? 'Alumno actualizado exitosamente.' : 'Alumno registrado exitosamente.' });
+      router.refresh();
+
+      setTimeout(() => {
+        if (cursoId) {
+          router.push(`/cursos/${cursoId}`);
+        } else {
+          router.back();
+        }
+      }, 1500);
+    } catch (error: any) {
+      console.error('Error saving alumno:', error);
+      setMessage({ type: 'error', text: error.message || 'Error al guardar el alumno.' });
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  const handleCancel = () => {
+    if (!isSaving && message?.type !== 'success') {
+      router.back();
+    }
+  };
+
+  if (isFetching) {
+    return (
+      <div className="p-12 flex flex-col items-center justify-center space-y-4">
+        <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+        <p className="text-slate-400 text-sm">Cargando datos del alumno...</p>
+      </div>
+    );
+  }
+
+  const isFormValid = nombre.trim().length > 0 && !validateLegajo(legajo);
 
   return (
     <div className="max-w-lg mx-auto space-y-6 animate-in fade-in duration-200">
@@ -64,6 +157,17 @@ export const NuevoAlumnoView: React.FC = () => {
         </div>
       </div>
 
+      {message && (
+        <div className={`p-4 rounded-xl flex items-center gap-3 text-sm font-medium animate-in slide-in-from-top-2 ${
+          message.type === 'success' 
+            ? 'bg-emerald-950/50 text-emerald-400 border border-emerald-800/50' 
+            : 'bg-red-950/50 text-red-400 border border-red-800/50'
+        }`}>
+          {message.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+          <span>{message.text}</span>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 space-y-5 shadow-2xl">
         <div>
           <label className="block text-xs font-semibold text-slate-300 mb-1.5">
@@ -76,28 +180,46 @@ export const NuevoAlumnoView: React.FC = () => {
             placeholder="Ej: Juan Pérez"
             className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none transition-colors"
             required
+            disabled={isSaving || message?.type === 'success'}
           />
         </div>
 
         <div>
           <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-            Número de Legajo <span className="text-indigo-400">*</span>
+            DNI / Legajo <span className="text-indigo-400">*</span>
           </label>
           <input
             type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             value={legajo}
-            onChange={(e) => setLegajo(e.target.value)}
-            placeholder="Ej: 1001"
-            className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none transition-colors"
+            onChange={handleLegajoChange}
+            onBlur={handleLegajoBlur}
+            placeholder="Ej: 38123456"
+            maxLength={8}
+            className={`w-full bg-slate-950 border ${
+              legajoError ? 'border-red-500/80 focus:border-red-500' : 'border-slate-800 focus:border-indigo-500'
+            } rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none transition-colors`}
             required
+            disabled={isSaving || message?.type === 'success'}
           />
+          {legajoError && (
+            <p className="mt-1.5 text-[11px] font-medium text-red-400 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              <span>{legajoError}</span>
+            </p>
+          )}
+          <p className="mt-1 text-[10px] text-slate-500">
+            Debe ingresar entre 7 y 8 dígitos numéricos sin puntos ni espacios.
+          </p>
         </div>
 
         <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-800">
           <button
             type="button"
-            onClick={goToAlumnosLista}
-            className="py-2.5 px-5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2"
+            onClick={handleCancel}
+            disabled={isSaving || message?.type === 'success'}
+            className="py-2.5 px-5 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-300 font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2"
           >
             <X className="w-4 h-4" />
             <span>Cancelar</span>
@@ -105,10 +227,20 @@ export const NuevoAlumnoView: React.FC = () => {
 
           <button
             type="submit"
-            className="py-2.5 px-5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2"
+            disabled={isSaving || !isFormValid || message?.type === 'success'}
+            className="py-2.5 px-5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-950 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2"
           >
-            <Save className="w-4 h-4" />
-            <span>Guardar</span>
+            {isSaving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Guardando...</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                <span>Guardar</span>
+              </>
+            )}
           </button>
         </div>
       </form>
