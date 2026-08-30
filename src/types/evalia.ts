@@ -31,6 +31,8 @@ export interface Question {
   consigna: string;
   respuestaEsperada: string;
   puntajeMaximo: number;
+  criteriosIA?: string;
+  esEvaluacionVisual?: boolean;
 }
 
 export interface Exam {
@@ -43,6 +45,7 @@ export interface Exam {
   entregasCount: number;
   preguntas: Question[];
   criteriosIA?: string;
+  requiereRevisionAviso?: boolean;
 }
 
 export interface EvaluatedQuestion {
