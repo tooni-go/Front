@@ -13,13 +13,22 @@ export const NuevoCursoView: React.FC = () => {
   const [anio, setAnio] = useState('2°');
   const [division, setDivision] = useState('A');
   const [anioLectivo, setAnioLectivo] = useState('2026');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!materia.trim()) return;
 
-    const created = addCourse(materia.trim(), anio, division, anioLectivo);
-    router.push(`/cursos/${created.id}`);
+    setIsSaving(true);
+    setSaveError(null);
+    try {
+      const created = await addCourse(materia.trim(), anio, division, anioLectivo);
+      router.push(`/cursos/${created.id}`);
+    } catch (err: any) {
+      setSaveError(err?.message || 'No se pudo crear el curso. Intente nuevamente.');
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -96,6 +105,9 @@ export const NuevoCursoView: React.FC = () => {
         </div>
 
         <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-800">
+          {saveError && (
+            <p className="text-xs text-rose-400 flex-1">{saveError}</p>
+          )}
           <button
             type="button"
             onClick={() => router.push('/cursos')}
@@ -107,10 +119,11 @@ export const NuevoCursoView: React.FC = () => {
 
           <button
             type="submit"
-            className="py-2.5 px-5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2"
+            disabled={isSaving}
+            className="py-2.5 px-5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2 disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
-            <span>Guardar</span>
+            <span>{isSaving ? 'Guardando...' : 'Guardar'}</span>
           </button>
         </div>
       </form>
