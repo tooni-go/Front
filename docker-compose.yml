@@ -1,0 +1,40 @@
+services:
+  backend:
+    build:
+      context: ../../BackPasantia/Backend-App
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=file:./dev.db
+    volumes:
+      - backend-db:/app/prisma
+      - backend-uploads:/app/uploads
+    networks:
+      - evalia-network
+    restart: always
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:3000
+      - NEXTAUTH_URL=http://localhost:3001
+    depends_on:
+      - backend
+    networks:
+      - evalia-network
+    restart: always
+
+volumes:
+  backend-db:
+  backend-uploads:
+
+networks:
+  evalia-network:
+    driver: bridge

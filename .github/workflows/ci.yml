@@ -1,0 +1,38 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [ Develop, main ]
+  pull_request:
+    branches: [ Develop, main ]
+
+jobs:
+  lint-and-typecheck:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Run ESLint (Linter)
+        run: pnpm run lint
+
+      - name: Check TypeScript types
+        run: pnpm exec tsc --noEmit
+
+      - name: Build Next.js application
+        run: pnpm run build
