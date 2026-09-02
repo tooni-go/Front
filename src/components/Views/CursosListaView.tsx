@@ -7,7 +7,6 @@ import { fetchApi } from '@/src/lib/api';
 
 interface Course {
   id: string;
-  nombre: string;
   materia: string;
   anio: number;
   division: string;
@@ -69,7 +68,7 @@ export const CursosListaView: React.FC = () => {
           <BookOpen className="w-16 h-16 text-indigo-500/50 mb-2" />
           <h2 className="text-xl font-bold text-white">No tienes cursos creados</h2>
           <p className="text-sm text-slate-400 max-w-sm">
-            Comienza creando tu primer curso para poder añadir alumnos y empezar a corregir exámenes con Inteligencia Artificial.
+            Comienza creando tu primer curso para poder aÃ±adir alumnos y empezar a corregir exÃ¡menes con Inteligencia Artificial.
           </p>
           <button
             onClick={() => router.push('/cursos/nuevo')}
@@ -89,7 +88,7 @@ export const CursosListaView: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-400">
-                    Año Lectivo: {course.anioLectivo || new Date().getFullYear()}
+                    AÃ±o Lectivo: {course.anioLectivo || new Date().getFullYear()}
                   </span>
                   <span className="text-xs font-bold text-indigo-400 bg-indigo-950/80 border border-indigo-800/40 px-2.5 py-0.5 rounded-md">
                     {course.anio || '1'} {course.division || 'A'}
@@ -109,7 +108,7 @@ export const CursosListaView: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4 text-indigo-400" />
-                    <span>{course.examenes?.length || 0} exámenes</span>
+                    <span>{course.examenes?.length || 0} exÃ¡menes</span>
                   </div>
                 </div>
               </div>

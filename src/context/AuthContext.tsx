@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useSession, signIn, signOut as nextAuthSignOut } from 'next-auth/react';
 import { User } from '../types/evalia';
+import { fetchApi } from '../lib/api';
 
 interface AuthContextType {
   user: User | null;
@@ -25,18 +26,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    if (session?.user) {
-      setUser({
-        // @ts-ignore - Extraemos el ID si lo inyectamos en el callback
-        id: session.user.id || 'google-usr-1',
-        name: session.user.name || 'Usuario',
-        email: session.user.email || '',
-        avatar: session.user.image || '',
-      });
-    } else {
-      setUser(null);
+    let isMounted = true;
+    
+    const loadProfile = async () => {
+      if (session?.user) {
+        let dbName = null;
+        try {
+          const dbProfile = await fetchApi('/api/v1/profesor/me');
+          if (dbProfile && (dbProfile.nombre || dbProfile.apellido)) {
+            dbName = (dbProfile.nombre || '') + (dbProfile.apellido ? ' ' + dbProfile.apellido : '');
+            dbName = dbName.trim();
+          }
+        } catch (error) {
+          // Si falla, silenciosamente usamos los datos de sesin (Google)
+        }
+
+        if (isMounted) {
+          setUser({
+            // @ts-ignore - Extraemos el ID si lo inyectamos en el callback
+            id: session.user.id || 'google-usr-1',
+            name: dbName || session.user.name || 'Usuario',
+            email: session.user.email || '',
+            avatar: session.user.image || '',
+          });
+        }
+      } else {
+        if (isMounted) setUser(null);
+      }
+    };
+
+    if (status !== 'loading') {
+      loadProfile();
     }
-  }, [session]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [session, status]);
 
   const isLoading = status === 'loading';
   const isAuthenticated = status === 'authenticated' && !!user;
@@ -47,7 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithCredentials = async (email: string) => {
     // Si bien mantenemos la interfaz por retrocompatibilidad visual con el LoginScreen,
-    // en este setup forzamos Google OAuth según la especificación.
+    // en este setup forzamos Google OAuth segǧn la especificacin.
     await signIn('google', { callbackUrl: '/dashboard' });
   };
 
