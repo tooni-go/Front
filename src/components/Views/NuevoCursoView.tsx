@@ -4,18 +4,18 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Save, X, BookPlus, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { fetchApi } from '@/src/lib/api';
+import { useEvalia } from '../../context/EvaliaContext';
 
 export const NuevoCursoView: React.FC = () => {
+  const { addCourse } = useEvalia();
   const router = useRouter();
 
   const [materia, setMateria] = useState('');
   const [anio, setAnio] = useState('2°');
   const [division, setDivision] = useState('A');
   const [anioLectivo, setAnioLectivo] = useState('2026');
-
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!materia.trim()) return;
@@ -24,22 +24,13 @@ export const NuevoCursoView: React.FC = () => {
     setMessage(null);
 
     try {
-      await fetchApi('/api/v1/cursos', {
-        method: 'POST',
-        body: JSON.stringify({ 
-          materia: materia.trim(), 
-          nombre: `${materia.trim()} ${anio} ${division}`,
-          anio,
-          division,
-          anioLectivo: parseInt(anioLectivo)
-        })
-      });
+      const created = await addCourse(materia.trim(), anio, division, anioLectivo);
 
       setMessage({ type: 'success', text: 'Curso creado exitosamente.' });
       router.refresh(); // Invalida el caché para que la lista de cursos se actualice
       
       setTimeout(() => {
-        router.push('/cursos');
+        router.push(`/cursos/${created.id}`);
       }, 1500);
     } catch (error: any) {
       console.error('Error al crear el curso:', error);
