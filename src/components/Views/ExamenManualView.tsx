@@ -1,48 +1,55 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useEvalia } from '../../context/EvaliaContext';
-import { Question } from '../../types/evalia';
-import { Plus, Trash2, Save, ArrowLeft, HelpCircle } from 'lucide-react';
+import { Plus, Trash2, Save, ArrowLeft, HelpCircle, AlertTriangle, Loader2, CheckCircle2 } from 'lucide-react';
+import { fetchApi } from '@/src/lib/api';
 
 export const ExamenManualView: React.FC = () => {
-  const { saveExam, getCourseById, getExamById } = useEvalia();
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const exam = getExamById(params.id);
-  const course = getCourseById(exam?.courseId || params.id);
-  const courseId = course?.id;
-
+  
+  const courseId = params.id;
+  const [course, setCourse] = useState<any>(null);
+  
   const [titulo, setTitulo] = useState('Primer Parcial');
   const [fecha, setFecha] = useState(new Date().toLocaleDateString('es-ES'));
   const [criteriosIA, setCriteriosIA] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const [preguntas, setPreguntas] = useState<Question[]>([
+  const [preguntas, setPreguntas] = useState<any[]>([
     {
       id: 'q-1',
       numero: 1,
       consigna: '',
       respuestaEsperada: '',
-      puntajeMaximo: 25,
+      puntajeMaximo: '',
     },
   ]);
+
+  useEffect(() => {
+    if (!courseId) return;
+    fetchApi('/api/v1/cursos/' + courseId)
+      .then(data => setCourse(data))
+      .catch(err => console.error(err));
+  }, [courseId]);
 
   const handleAddQuestion = () => {
     setPreguntas((prev) => [
       ...prev,
       {
-        id: `q-${Date.now()}`,
+        id: 'q-' + Date.now(),
         numero: prev.length + 1,
         consigna: '',
         respuestaEsperada: '',
-        puntajeMaximo: 25,
+        puntajeMaximo: '',
       },
     ]);
   };
 
   const handleRemoveQuestion = (id: string) => {
-    if (preguntas.length <= 1) return;
     setPreguntas((prev) =>
       prev
         .filter((q) => q.id !== id)
@@ -50,48 +57,76 @@ export const ExamenManualView: React.FC = () => {
     );
   };
 
-  const handleUpdateQuestion = (id: string, field: keyof Question, value: any) => {
+  const handleUpdateQuestion = (id: string, field: string, value: any) => {
     setPreguntas((prev) =>
       prev.map((q) => (q.id === id ? { ...q, [field]: value } : q))
     );
   };
 
-  const puntajeTotal = preguntas.reduce(
-    (sum, q) => sum + (Number(q.puntajeMaximo) || 0),
-    0
-  );
+  const puntajeTotal = preguntas.reduce((sum, q) => sum + (Number(q.puntajeMaximo) || 0), 0);
+  const hasEmptyPoints = preguntas.some(q => q.puntajeMaximo === '' || q.puntajeMaximo === 0 || q.puntajeMaximo === undefined);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!courseId || !titulo.trim()) return;
+    setErrorMsg(null);
+    setIsSaving(true);
 
-    const created = saveExam({
-      courseId,
-      titulo: titulo.trim(),
-      fecha,
-      criteriosIA,
-      preguntas,
-    });
-    router.push(`/examenes/${created.id}`);
+    try {
+      const payload = {
+        titulo: titulo.trim(),
+        fecha: fecha.trim(),
+        criteriosAdicionales: criteriosIA.trim(),
+        puntajeTotal: puntajeTotal,
+        preguntas: preguntas.map((q, idx) => ({
+          enunciado: q.consigna.trim(),
+          respuestaEsperada: q.respuestaEsperada.trim(),
+          puntajeMaximo: Number(q.puntajeMaximo) || 0,
+          orden: idx + 1
+        }))
+      };
+
+      await fetchApi('/api/v1/cursos/' + courseId + '/examenes', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+
+      setSuccess(true);
+      setTimeout(() => {
+        router.push('/cursos/' + courseId);
+      }, 1500);
+
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Error al guardar el examen');
+      setIsSaving(false);
+    }
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-200">
+    <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-200">
       <button
-        onClick={() => router.push(`/examenes/${courseId || params.id}/metodo`)}
+        onClick={() => router.push(`/examenes/${courseId}/metodo`)}
         className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
         <span>Cambiar método de creación</span>
       </button>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Section 1: DATOS DEL EXAMEN (Wireframe 11) */}
+      <form onSubmit={handleSubmit} className="space-y-6 relative">
+        {success && (
+          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm z-50 rounded-3xl flex flex-col items-center justify-center animate-in fade-in">
+            <CheckCircle2 className="w-16 h-16 text-emerald-500 mb-4" />
+            <h2 className="text-xl font-bold text-white">Examen Guardado</h2>
+            <p className="text-slate-400 mt-2">Redirigiendo al curso...</p>
+          </div>
+        )}
+
+        {/* Section 1: DATOS DEL EXAMEN */}
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 space-y-4 shadow-xl">
           <h2 className="text-base font-bold text-white border-b border-slate-800 pb-3 flex items-center justify-between">
             <span>DATOS DEL EXAMEN</span>
             <span className="text-xs text-indigo-400 font-semibold">
-              Curso: {course ? `${course.materia} ${course.anio}${course.division}` : ''}
+              Curso: {course ? `${course.materia} ${course.anio}${course.division}` : 'Cargando...'}
             </span>
           </h2>
 
@@ -125,7 +160,21 @@ export const ExamenManualView: React.FC = () => {
           </div>
         </div>
 
-        {/* Section 2: PREGUNTAS (Wireframe 11) */}
+        {/* Validation Warning */}
+        {(puntajeTotal !== 10 || hasEmptyPoints) && (
+          <div className="bg-amber-950/40 border border-amber-900/50 rounded-2xl p-4 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-sm font-bold text-amber-400">Atención con los puntajes</h3>
+              <p className="text-xs text-amber-200/70 mt-1">
+                {puntajeTotal !== 10 && `El puntaje total del examen debe sumar exactamente 10. Actualmente suma ${puntajeTotal}. `}
+                {hasEmptyPoints && "Hay preguntas sin puntaje asignado. Se guardarán con 0 puntos por defecto."}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Section 2: PREGUNTAS */}
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 space-y-6 shadow-xl">
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
@@ -133,7 +182,7 @@ export const ExamenManualView: React.FC = () => {
               Preguntas ({preguntas.length})
             </h2>
 
-            <div className="text-xs font-bold text-indigo-300 bg-indigo-950/80 border border-indigo-800/40 px-3 py-1 rounded-xl">
+            <div className={`text-xs font-bold px-3 py-1 rounded-xl border ${puntajeTotal === 10 ? 'text-emerald-400 bg-emerald-950/80 border-emerald-800/40' : 'text-amber-400 bg-amber-950/80 border-amber-800/40'}`}>
               Puntaje Total Calculado: {puntajeTotal} pts
             </div>
           </div>
@@ -196,12 +245,12 @@ export const ExamenManualView: React.FC = () => {
                     </label>
                     <input
                       type="number"
-                      min={1}
-                      max={100}
+                      min={0}
+                      max={10}
+                      step="0.5"
                       value={q.puntajeMaximo}
-                      onChange={(e) => handleUpdateQuestion(q.id, 'puntajeMaximo', Number(e.target.value))}
+                      onChange={(e) => handleUpdateQuestion(q.id, 'puntajeMaximo', e.target.value)}
                       className="w-full bg-slate-900 border border-slate-800 focus:border-indigo-500 rounded-xl px-3 py-2.5 text-xs text-white font-bold text-center focus:outline-none"
-                      required
                     />
                   </div>
                 </div>
@@ -215,11 +264,11 @@ export const ExamenManualView: React.FC = () => {
             className="w-full py-3 bg-slate-950 hover:bg-slate-800 text-indigo-400 hover:text-indigo-300 font-bold text-xs rounded-2xl border border-dashed border-slate-800 hover:border-indigo-500 transition-all flex items-center justify-center gap-2"
           >
             <Plus className="w-4 h-4" />
-            <span>+ Agregar otra pregunta</span>
+            <span>Agregar otra pregunta</span>
           </button>
         </div>
 
-        {/* Section 3: Criterios adicionales IA (Wireframe 11) */}
+        {/* Section 3: Criterios adicionales IA */}
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 space-y-3 shadow-xl">
           <label className="block text-xs font-bold text-white">
             Criterios adicionales para la IA (Opcional)
@@ -233,13 +282,18 @@ export const ExamenManualView: React.FC = () => {
           />
         </div>
 
+        {errorMsg && (
+          <div className="text-rose-400 text-sm font-semibold text-center">{errorMsg}</div>
+        )}
+
         {/* Submit */}
         <div className="flex items-center justify-end gap-3 pt-2">
           <button
             type="submit"
-            className="py-3 px-8 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2"
+            disabled={isSaving}
+            className="py-3 px-8 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2 disabled:opacity-50"
           >
-            <Save className="w-4 h-4" />
+            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             <span>Guardar examen</span>
           </button>
         </div>
