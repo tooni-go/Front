@@ -46,9 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const loginWithCredentials = async (email: string) => {
-    // Si bien mantenemos la interfaz por retrocompatibilidad visual con el LoginScreen,
-    // en este setup forzamos Google OAuth según la especificación.
-    await signIn('google', { callbackUrl: '/dashboard' });
+    await signIn('credentials', { email, callbackUrl: '/dashboard' });
   };
 
   const logout = () => {
