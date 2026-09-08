@@ -24,6 +24,24 @@ interface BackendCurso {
   alumnos: { alumno: { id: string; nombre: string; apellido: string; legajo: string } }[];
 }
 
+interface BackendExamen {
+  id: string;
+  titulo: string;
+  fecha: string;
+  preguntas: { puntajeMaximo: number }[];
+  _count?: { entregas: number };
+}
+
+interface BackendCurso {
+  id: string;
+  materia: string;
+  anio: number;
+  division: string;
+  anioLectivo: number;
+  examenes: BackendExamen[];
+  alumnos: { alumno: { id: string; nombre: string; apellido: string; legajo: string } }[];
+}
+
 interface CursoDetalleViewProps {
   courseId?: string;
 }
