@@ -4,6 +4,25 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Users, FileText, Plus, ArrowLeft, ChevronRight, Edit, Trash2, Loader2, AlertTriangle } from 'lucide-react';
 import { fetchApi } from '@/src/lib/api';
+import { ReportExportDropdown } from '../Common/ReportExportDropdown';
+
+interface BackendExamen {
+  id: string;
+  titulo: string;
+  fecha: string;
+  preguntas: { puntajeMaximo: number }[];
+  _count?: { entregas: number };
+}
+
+interface BackendCurso {
+  id: string;
+  materia: string;
+  anio: number;
+  division: string;
+  anioLectivo: number;
+  examenes: BackendExamen[];
+  alumnos: { alumno: { id: string; nombre: string; apellido: string; legajo: string } }[];
+}
 
 interface BackendExamen {
   id: string;
@@ -127,6 +146,17 @@ export const CursoDetalleView: React.FC<CursoDetalleViewProps> = ({ courseId: pr
 
         {/* Action buttons */}
         <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <ReportExportDropdown
+            type="curso"
+            id={curso.id}
+            label="Exportar Calificaciones"
+            pdfLabel="Descargar PDF"
+            pdfDescription="Planilla consolidada con promedio"
+            csvLabel="Descargar CSV"
+            csvDescription="Planilla consolidada compatible con Excel"
+            disabled={students.length === 0 && exams.length === 0}
+            disabledReason="El curso no tiene alumnos ni exámenes para exportar"
+          />
           <button
             onClick={() => router.push(`/alumnos/nuevo?cursoId=${courseId}`)}
             className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2"

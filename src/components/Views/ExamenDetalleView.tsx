@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { fetchApi } from '../../lib/api';
 import { Exam, Course, Question } from '../../types/evalia';
+import { ReportExportDropdown } from '../Common/ReportExportDropdown';
 import {
   FileText,
   Calendar,
@@ -179,6 +180,16 @@ export const ExamenDetalleView: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            <ReportExportDropdown
+              type="examen"
+              id={exam.id}
+              label="Exportar Reporte"
+              pdfLabel="Reporte PDF"
+              pdfDescription="Planilla de notas del examen"
+              csvLabel="Reporte CSV"
+              csvDescription="Datos tabulares para Excel"
+            />
+
             <button
               onClick={() => router.push(`/examenes/${exam.id}/preguntas`)}
               className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2"
