@@ -18,6 +18,11 @@ import {
   ArrowLeft,
   ChevronRight,
   Loader2,
+  Settings,
+  Edit,
+  Copy,
+  Trash2,
+  MoreVertical
 } from 'lucide-react';
 
 interface BackendPregunta {
@@ -99,6 +104,14 @@ export const ExamenDetalleView: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [deliveries, setDeliveries] = useState<LocalDelivery[]>([]);
+  
+  // Modals state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
+  const [myCourses, setMyCourses] = useState<any[]>([]);
+  const [targetCourseId, setTargetCourseId] = useState<string>('');
 
   useEffect(() => {
     if (!params.id) return;
@@ -110,6 +123,7 @@ export const ExamenDetalleView: React.FC = () => {
         const { exam: mappedExam, course: mappedCourse } = mapBackendExam(data);
         setExam(mappedExam);
         setCourse(mappedCourse);
+        setTargetCourseId(mappedExam.courseId);
         try {
           const saved = localStorage.getItem('evalia_deliveries');
           if (saved) {
@@ -123,6 +137,44 @@ export const ExamenDetalleView: React.FC = () => {
       })
       .finally(() => setIsLoading(false));
   }, [params.id]);
+
+  const fetchCoursesForDuplicate = () => {
+    fetchApi<any[]>('/api/v1/cursos')
+      .then(data => {
+        setMyCourses(data);
+        setShowDuplicateModal(true);
+      })
+      .catch(console.error);
+  };
+
+  const handleDelete = async () => {
+    if (!exam) return;
+    setIsDeleting(true);
+    try {
+      await fetchApi(`/api/v1/examenes/${exam.id}`, { method: 'DELETE' });
+      router.push(course ? `/cursos/${course.id}` : '/cursos');
+    } catch (error) {
+      console.error(error);
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDuplicate = async () => {
+    if (!exam || !targetCourseId) return;
+    setIsDuplicating(true);
+    try {
+      const result = await fetchApi(`/api/v1/examenes/${exam.id}/duplicar`, {
+        method: 'POST',
+        body: JSON.stringify({ cursoDestinoId: targetCourseId })
+      });
+      router.push(`/examenes/${result.id}`);
+      setShowDuplicateModal(false);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsDuplicating(false);
+    }
+  };
 
   const handleOpenDelivery = (deliveryId: string, estado: string) => {
     if (estado === 'Revisión') {
@@ -160,13 +212,39 @@ export const ExamenDetalleView: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
-      <button
-        onClick={() => course ? router.push(`/cursos/${course.id}`) : router.back()}
-        className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
-      >
-        <ArrowLeft className="w-3.5 h-3.5" />
-        <span>{course ? `Volver a ${course.materia} ${course.anio}${course.division}` : 'Volver'}</span>
-      </button>
+      <div className="flex justify-between items-center">
+        <button
+          onClick={() => course ? router.push(`/cursos/${course.id}`) : router.back()}
+          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>{course ? `Volver a ${course.materia} ${course.anio}${course.division}` : 'Volver'}</span>
+        </button>
+        
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => router.push(`/examenes/${exam.id}/editar`)}
+            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all"
+            title="Editar examen"
+          >
+            <Edit className="w-4 h-4" />
+          </button>
+          <button 
+            onClick={fetchCoursesForDuplicate}
+            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all"
+            title="Duplicar examen"
+          >
+            <Copy className="w-4 h-4" />
+          </button>
+          <button 
+            onClick={() => setShowDeleteModal(true)}
+            className="p-2 text-rose-400 hover:text-rose-300 hover:bg-rose-950/50 rounded-lg transition-all"
+            title="Eliminar examen"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
 
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -246,13 +324,15 @@ export const ExamenDetalleView: React.FC = () => {
             <FileText className="w-4 h-4 text-indigo-400" />
             Últimas entregas ({deliveries.length})
           </h2>
-          <button
-            onClick={() => router.push(`/entregas/nueva?examenId=${exam.id}`)}
-            className="text-xs font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
-          >
-            <Upload className="w-3.5 h-3.5" />
-            <span>Cargar Nueva Entrega</span>
-          </button>
+          {deliveries.length > 0 && (
+            <button
+              onClick={() => router.push(`/entregas/nueva?examenId=${exam.id}`)}
+              className="text-xs font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              <span>Cargar Nueva Entrega</span>
+            </button>
+          )}
         </div>
 
         {deliveries.length === 0 ? (
@@ -309,6 +389,79 @@ export const ExamenDetalleView: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* MODALS */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full space-y-5 shadow-2xl">
+            <h3 className="text-lg font-bold text-rose-400 flex items-center gap-2">
+              <Trash2 className="w-5 h-5"/> Eliminar Examen
+            </h3>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              ¿Estás seguro de que deseas eliminar este examen? Todas sus entregas, calificaciones y consignas asociadas se borrarán permanentemente.
+            </p>
+            <div className="flex gap-3 justify-end pt-2">
+              <button 
+                onClick={() => setShowDeleteModal(false)} 
+                disabled={isDeleting}
+                className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white transition-colors"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleDelete} 
+                disabled={isDeleting}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl shadow-lg flex items-center gap-2 disabled:opacity-50"
+              >
+                {isDeleting ? <Loader2 className="w-4 h-4 animate-spin"/> : null}
+                Sí, Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDuplicateModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full space-y-5 shadow-2xl">
+            <h3 className="text-lg font-bold text-indigo-400 flex items-center gap-2">
+              <Copy className="w-5 h-5"/> Duplicar Examen
+            </h3>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              El examen y todas sus consignas se copiarán. Selecciona el curso de destino:
+            </p>
+            <div className="space-y-1">
+               <label className="text-[10px] font-bold text-slate-500 uppercase">Curso Destino</label>
+               <select 
+                 value={targetCourseId} 
+                 onChange={e => setTargetCourseId(e.target.value)} 
+                 className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:border-indigo-500 focus:outline-none"
+               >
+                 {myCourses.map(c => (
+                   <option key={c.id} value={c.id}>{c.materia} - {c.anio}{c.division}</option>
+                 ))}
+               </select>
+            </div>
+            <div className="flex gap-3 justify-end pt-2">
+              <button 
+                onClick={() => setShowDuplicateModal(false)} 
+                disabled={isDuplicating}
+                className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white transition-colors"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleDuplicate} 
+                disabled={isDuplicating}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/30 flex items-center gap-2 disabled:opacity-50"
+              >
+                {isDuplicating ? <Loader2 className="w-4 h-4 animate-spin"/> : null}
+                Duplicar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
