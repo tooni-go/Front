@@ -8,6 +8,7 @@ import { fetchApi } from '@/src/lib/api';
 interface Course {
   id: string;
   materia: string;
+  nombre?: string;
   anio: number;
   division: string;
   anioLectivo: number;
