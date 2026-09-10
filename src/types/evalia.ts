@@ -78,3 +78,25 @@ export interface Delivery {
   requiereRevisionManual?: boolean;
   motivoRevision?: string;
 }
+
+export interface OpenRouterModelOption {
+  id: string;
+  nombre: string;
+  proveedor: string;
+  descripcion: string;
+  esMultimodal: boolean;
+}
+
+export interface GeminiPrincipalConfig {
+  modelo: string;
+  configurado: boolean;
+}
+
+export interface AiModelConfigResponse {
+  modeloActivo: string;
+  origen: 'memoria' | 'env_default' | string;
+  modelosDisponibles: OpenRouterModelOption[];
+  geminiPrincipal?: GeminiPrincipalConfig;
+}
+
+
