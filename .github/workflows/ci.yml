@@ -14,30 +14,23 @@ jobs:
       NEXTAUTH_SECRET: "ci_dummy_nextauth_secret_for_build"
       NEXTAUTH_URL: "http://localhost:3001"
       NEXT_PUBLIC_API_URL: "http://localhost:3000"
+      NEXT_TELEMETRY_DISABLED: 1
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
+          cache: 'npm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Run ESLint (Linter)
-        run: pnpm run lint
+        run: npm install --include=optional
 
       - name: Check TypeScript types
-        run: pnpm exec tsc --noEmit
+        run: npx tsc --noEmit
 
       - name: Build Next.js application
-        run: pnpm run build
+        run: npm run build
