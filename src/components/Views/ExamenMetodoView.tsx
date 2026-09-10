@@ -1,27 +1,43 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useEvalia } from '../../context/EvaliaContext';
-import { FileEdit, Sparkles, ArrowRight, ArrowLeft } from 'lucide-react';
+import { FileEdit, Sparkles, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
+import { fetchApi } from '@/src/lib/api';
 
 export const ExamenMetodoView: React.FC = () => {
-  const { getCourseById, getExamById } = useEvalia();
-  const params = useParams<{ id: string }>();
+  const params = useParams<{ id?: string }>();
   const router = useRouter();
   const [metodo, setMetodo] = useState<'manual' | 'inteligente'>('inteligente');
+  const [course, setCourse] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  
+  const courseId = params.id;
 
-  const exam = getExamById(params.id);
-  const course = getCourseById(exam?.courseId || params.id);
-  const wizardId = exam?.courseId || params.id;
+  useEffect(() => {
+    if (!courseId) return;
+    fetchApi(`/api/v1/cursos/${courseId}`)
+      .then(data => setCourse(data))
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
+  }, [courseId]);
 
   const handleContinue = () => {
     if (metodo === 'manual') {
-      router.push(`/examenes/${wizardId}/manual`);
+      router.push(`/examenes/${courseId}/manual`);
     } else {
-      router.push(`/examenes/${wizardId}/inteligente`);
+      router.push(`/examenes/${courseId}/inteligente`);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-indigo-400">
+        <Loader2 className="w-8 h-8 animate-spin mb-4" />
+        <p className="text-xs font-semibold">Cargando...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-200">
@@ -78,7 +94,7 @@ export const ExamenMetodoView: React.FC = () => {
             </div>
 
             <span className="text-[11px] font-semibold text-indigo-400">
-              ⚡ Recomendado &bull; Ahorra tiempo
+              ✓ Recomendado &bull; Ahorra tiempo
             </span>
           </div>
 
@@ -112,7 +128,7 @@ export const ExamenMetodoView: React.FC = () => {
             </div>
 
             <span className="text-[11px] font-semibold text-slate-400">
-              ✍ Control total ítem por ítem
+              ❖ Control total ítem por ítem
             </span>
           </div>
         </div>

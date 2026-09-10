@@ -1,14 +1,35 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'motion/react';
-import { Sparkles, ArrowRight, ShieldCheck, Mail, Lock } from 'lucide-react';
+import { Sparkles, ArrowRight, ShieldCheck, Mail, Lock, AlertCircle } from 'lucide-react';
 
 export const LoginScreen: React.FC = () => {
   const { loginWithGoogle, loginWithCredentials, isLoading } = useAuth();
+  const searchParams = useSearchParams();
   const [showEmailOption, setShowEmailOption] = useState(false);
   const [email, setEmail] = useState('');
+
+  const errorParam = searchParams.get('error');
+
+  const getErrorMessage = (err: string | null) => {
+    if (!err) return null;
+    switch (err) {
+      case 'OAuthSignin':
+      case 'OAuthCallback':
+        return 'No se pudo conectar con Google. Verifica que la URI de redireccionamiento (http://localhost:3001/api/auth/callback/google) esté agregada en Google Cloud Console.';
+      case 'Configuration':
+        return 'Error de configuración de Google OAuth. Verifica las credenciales en .env.local.';
+      case 'AccessDenied':
+        return 'Acceso cancelado o denegado.';
+      default:
+        return `Error al iniciar sesión (${err}).`;
+    }
+  };
+
+  const errorMessage = getErrorMessage(errorParam);
 
   const handleGoogleClick = () => {
     loginWithGoogle();
@@ -48,6 +69,13 @@ export const LoginScreen: React.FC = () => {
         <p className="text-sm font-medium text-indigo-300/90 mb-8 max-w-xs mx-auto">
           Corrección inteligente de exámenes escritos
         </p>
+
+        {errorMessage && (
+          <div className="mb-6 p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-2xl text-rose-300 text-xs flex items-start gap-2.5 text-left">
+            <AlertCircle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
+            <span className="leading-relaxed">{errorMessage}</span>
+          </div>
+        )}
 
         {/* Main Action: Continuar con Google */}
         <div className="space-y-4">
