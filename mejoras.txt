@@ -1,0 +1,321 @@
+Posibles mejoras de la app EvalIA:
+
+1. EXAMEN EN MODO BORRADOR (DRAFTS)
+--------------------------------------------------------------------------------
+- Descripción:
+  Permite al docente crear un examen y guardarlo como "Borrador" para poder 
+  ir armando las consignas en diferentes sesiones de trabajo sin que el examen 
+  se active en el curso antes de tiempo.
+- Funcionamiento:
+  El examen no estará visible para la carga de entregas hasta que el docente 
+  haga clic en "Publicar Examen". Permite editar, pausar y continuar la 
+  planificación cuando el docente lo desee.
+--------------------------------------------------------------------------------
+2. GENERADOR DE TEMAS Y VARIANTES ANTI-COPIA CON IA
+--------------------------------------------------------------------------------
+- Descripción:
+  A partir de un examen base, la IA genera múltiples versiones equivalentes 
+  (Tema A, Tema B, etc.) con los mismos objetivos de evaluación pero cambiando 
+  valores numéricos, enunciados o el orden de las preguntas.
+- Detalle clave:
+  El sistema le pregunta al docente cuántos temas desea generar, con un límite 
+  máximo igual a la cantidad de alumnos matriculados en el curso. Esto permite 
+  desde hacer los clásicos 2 o 3 temas hasta generar un examen único por alumno 
+  si el docente lo desea.
+--------------------------------------------------------------------------------
+3. RECREACIÓN Y ADAPTACIÓN DE EXÁMENES EXISTENTES (PLANTILLAS)
+--------------------------------------------------------------------------------
+- Descripción:
+  Permite al profesor seleccionar un examen ya tomado en años anteriores o 
+  en otro curso, y usarlo como base para recrear una nueva evaluación.
+- Funcionamiento:
+  El docente puede duplicar el examen y solicitarle a la IA que mantenga la 
+  estructura pero renueve las preguntas o actualice el nivel de dificultad 
+  para el nuevo ciclo lectivo.
+--------------------------------------------------------------------------------
+4. GENERADOR DE EXÁMENES LISTOS PARA IMPRIMIR (PDF / WORD CON MEMBRETE)
+--------------------------------------------------------------------------------
+- Descripción:
+  Botón que exporta el examen maquetado profesionalmente y listo para imprimir 
+  y repartir en el aula física.
+- Funcionamiento:
+  Genera un documento que incluye el encabezado institucional (colegio/universidad, 
+  materia, fecha), espacio para que el alumno complete Nombre y Legajo, 
+  cuadro de puntajes por pregunta y renglones/espacio en blanco para desarrollar 
+  las respuestas.
+--------------------------------------------------------------------------------
+5. DETECCIÓN DE SIMILITUD Y ALERTAS DE POSIBLE COPIA ENTRE ALUMNOS
+--------------------------------------------------------------------------------
+- Descripción:
+  Mecanismo inteligente que analiza y compara las respuestas de todos los 
+  alumnos del curso en una misma evaluación.
+- Funcionamiento:
+  La IA detecta patrones de redacción idénticos o razonamientos sospechosamente 
+  similares en preguntas abiertas y genera una alerta visual en el panel del 
+  docente para que este pueda revisar ambas entregas en paralelo.
+--------------------------------------------------------------------------------
+6. MAPA DE CALOR DE PREGUNTAS MÁS FALLADAS (DIAGNÓSTICO PEDAGÓGICO)
+--------------------------------------------------------------------------------
+- Descripción:
+  Panel analítico que muestra qué preguntas o conceptos tuvieron el menor 
+  porcentaje de respuestas correctas en el examen.
+- Impacto:
+  Le brinda al docente información pedagógica inmediata (ejemplo: "El 68% del 
+  curso falló en la Pregunta 4 sobre Ecuaciones"), indicándole con precisión 
+  qué temas debe reforzar en la siguiente clase.
+--------------------------------------------------------------------------------
+7. CURVA DE CALIFICACIONES Y ESTADÍSTICAS DEL CURSO
+--------------------------------------------------------------------------------
+- Descripción:
+  Módulo de métricas avanzadas que grafica el rendimiento general del curso 
+  tras la corrección.
+- Funcionamiento:
+  Muestra la distribución de notas (Campana de Gauss), promedio general, 
+  porcentaje de aprobados/desaprobados, nota máxima/mínima y dispersión del 
+  desempeño académico.
+--------------------------------------------------------------------------------
+8. ENVÍO DE CORRECCIONES Y FEEDBACK POR EMAIL (INDIVIDUAL O MASIVO)
+--------------------------------------------------------------------------------
+- Descripción:
+  Sistema de notificación y devolución digital automática a los alumnos una 
+  vez que el docente aprueba las notas finales.
+- Funcionamiento:
+  El profesor puede seleccionar enviar la devolución a un alumno en particular 
+  o hacer un envío masivo a toda la lista del curso. El correo adjunta el PDF 
+  del examen corregido junto con el desglose de puntajes y las observaciones 
+  cualitativas de la corrección.
+================================================================================
+--------------------------------------------------------------------------------
+9. AISLAMIENTO DE CURSOS POR DOCENTE Y MULTI-USUARIO (DATA ISOLATION)
+--------------------------------------------------------------------------------
+- Descripción:
+  Garantizar la privacidad y separación de datos entre diferentes profesores, 
+  asegurando que cada docente solo pueda ver, editar y calificar sus propios 
+  cursos, alumnos y exámenes.
+
+- Tareas en el Backend (NestJS):
+  1. En `CursosService`, actualizar `findMany` para filtrar estrictamente:
+     `prisma.curso.findMany({ where: { profesorId: usuarioLogueado.id } })`.
+  2. En `POST /cursos`, asociar automáticamente el curso al ID del profesor 
+     extraído del JWT de la sesión.
+  3. Proteger las rutas para que un profesor no pueda acceder a un curso 
+     que pertenezca a otro docente (Control de Acceso / Guards).
+
+- Tareas en el Frontend (Next.js):
+  1. Enviar el JWT / `profesorId` en el header de cada petición a la API.
+  2. Limpiar por completo el estado global (Context) y la memoria local 
+     al hacer Logout para que el siguiente usuario no vea datos residuales.
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+10. SINCRONIZACIÓN DE LOGIN Y ACTUALIZACIÓN DEL PERFIL DOCENTE (/profesor/me)
+--------------------------------------------------------------------------------
+- Descripción:
+  Conectar de forma completa el flujo de inicio de sesión con la base de datos 
+  y habilitar la edición persistente del perfil del profesor.
+
+- Funcionamiento esperado:
+  1. Al iniciar sesión (sea con Google o con Email), el backend debe verificar 
+     si el profesor existe en la base de datos SQLite; si no existe, debe 
+     crearlo automáticamente (registro automático / Upsert).
+  2. El backend devuelve un token JWT con el `id` y `email` del profesor.
+  3. El endpoint `PUT /api/v1/profesor/me` recibe el token en el header 
+     `Authorization: Bearer <token>`, actualiza el Nombre, Apellido y 
+     Departamento del docente en la base de datos y devuelve los datos guardados.
+  4. El frontend actualiza la interfaz y el saludo del usuario en tiempo real 
+     sin necesidad de recargar la página.
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+11. EDICIÓN Y ELIMINACIÓN DE CURSOS (CRUD COMPLETO CON CONFIRMACIÓN)
+--------------------------------------------------------------------------------
+- Descripción:
+  Permitir al docente modificar los datos de una división existente o eliminar 
+  un curso que ya no utilice.
+
+- Frontend (Next.js):
+  1. Agregar un botón de "Editar Curso" en la vista de detalle para corregir 
+     materia, año, división o ciclo lectivo.
+  2. Agregar un botón de "Eliminar Curso" con un modal de confirmación 
+     destructiva (alerta roja que advierta: "Esta acción eliminará también 
+     los alumnos matriculados y exámenes asociados").
+  3. Redireccionar al listado de cursos tras la eliminación con feedback visual.
+
+- Backend (NestJS / Prisma):
+  1. Endpoint `PUT /api/v1/cursos/:id`: Actualizar datos del curso.
+  2. Endpoint `DELETE /api/v1/cursos/:id`: Eliminar el curso y aplicar borrado 
+     en cascada (o borrado lógico) de las relaciones en SQLite.
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+12. SISTEMA DE LOGGING ESTRUCTURADO Y AUDITORÍA (tslog / typescript-logging)
+--------------------------------------------------------------------------------
+- Referencias: 
+  https://tslog.js.org/ | https://www.npmjs.com/package/typescript-logging
+
+- Descripción:
+  Implementar un servicio centralizado de logging tipado en TypeScript para 
+  capturar y persistir todos los eventos, advertencias y errores del sistema 
+  en archivos locales.
+
+- Alcance Backend (NestJS):
+  1. Integrar `tslog` como logger global de la aplicación.
+  2. Configurar transportes a archivos:
+     - `logs/error.log`: Errores HTTP 500, excepciones de base de datos y 
+       fallos en las APIs de Gemini / OpenRouter.
+     - `logs/app.log`: Registro de peticiones, tiempos de respuesta y 
+       auditoría de acciones docentes (creación de exámenes, aprobaciones).
+  3. Formatear los logs en JSON estructurado con timestamp, contexto y stack trace.
+
+- Alcance Frontend (Next.js):
+  1. Implementar interceptores en `fetchApi` y Error Boundaries que envíen 
+     los errores no controlados del cliente al backend para guardarlos en el log.
+
+--------------------------------------------------------------------------------
+13. ROTACIÓN DE SECRETOS Y SESIONES CON REFRESH TOKENS (AUTH0 PATTERN)
+--------------------------------------------------------------------------------
+- Referencia: 
+  https://auth0.com/blog/refresh-tokens-what-are-they-and-when-to-use-them/
+
+- Descripción:
+  Implementar el ciclo de vida seguro de autenticación mediante Access Tokens 
+  de corta duración y Refresh Tokens con rotación automática (Refresh Token Rotation).
+
+- Funcionamiento:
+  1. Access Token: Tiene una vida corta (ejemplo: 15 minutos) para acceder a 
+     los endpoints de cursos y exámenes.
+  2. Refresh Token: Se guarda en una cookie segura (`httpOnly`, `SameSite`) 
+     con una vida más larga (ejemplo: 7 días).
+  3. Rotación en cada uso (Token Rotation): Cuando el Access Token expira, 
+     el frontend solicita uno nuevo usando el Refresh Token. El backend invalida 
+     el Refresh Token anterior y entrega un par completamente nuevo. Si un token 
+     viejo intenta usarse nuevamente, el sistema revoca todas las sesiones 
+     por sospecha de robo.
+  4. Rotación periódica de API Keys externas (Gemini / OpenRouter / Google OAuth) 
+     en las consolas de proveedores.
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+14. MANEJO RESILIENTE DE ERRORES Y DIAGNÓSTICO DE IA (GEMINI / OPENROUTER)
+--------------------------------------------------------------------------------
+- Descripción:
+  Mejorar la detección de fallos y el feedback visual cuando los servicios 
+  de IA no puedan generar el examen o extraer el texto de un documento (PDF/DOCX).
+
+- Tareas en el Backend (NestJS):
+  1. Validación proactiva de credenciales: Verificar la validez de `GEMINI_API_KEY` 
+     y `OPENROUTER_API_KEY` al iniciar el servicio para alertar si faltan en el `.env`.
+  2. Mensajes de error específicos: En lugar de un error genérico, devolver 
+     la causa real del fallo (ej: "Límite de cuota excedido (Rate Limit 429)", 
+     "API Key no configurada", "El archivo PDF está protegido o ilegible").
+  3. Endpoint de Health Check (`GET /api/v1/ai/status`): Endpoint liviano 
+     que comprueba la conectividad con Gemini y OpenRouter y reporta cuál 
+     proveedor está activo.
+  4. Optimización del extractor de documentos: Mejorar el procesamiento de PDFs 
+     pesados o escaneados con OCR previo para evitar timeouts.
+
+- Tareas en el Frontend (Next.js):
+  1. Alertas descriptivas: Mostrar al usuario un mensaje claro con sugerencias 
+     (ej: "Verifique su archivo o intente pegando el texto manualmente").
+  2. Estado del motor de IA: Indicador visual en el perfil docente que muestre 
+     si los servicios de IA están conectados y listos para operar.
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+15. DESPLIEGUE CONTINUO (CD) Y HOSTING FULLSTACK EN RENDER (FRONT + BACK)
+--------------------------------------------------------------------------------
+- Descripción:
+  Configurar el pipeline de despliegue automático y el alojamiento de producción 
+  de toda la plataforma EvalIA (Frontend Next.js y Backend NestJS) en Render.
+
+- Configuración del Backend en Render:
+  1. Crear un Web Service conectado al repositorio `Backend-App`.
+  2. Configurar el entorno con Docker (usando el `Dockerfile` del backend).
+  3. Cargar las variables de entorno de producción (`DATABASE_URL`, `JWT_SECRET`, 
+     `GEMINI_API_KEY`, `OPENROUTER_API_KEY`).
+  4. Comando de inicio: `npx prisma db push && node dist/src/main.js`.
+
+- Configuración del Frontend en Render:
+  1. Crear un Web Service conectado al repositorio `Front`.
+  2. Configurar el entorno con Docker (usando el `Dockerfile` del frontend).
+  3. Enlazar `NEXT_PUBLIC_API_URL` apuntando a la URL pública del backend en Render 
+     (ej: `https://evalia-backend.onrender.com`).
+  4. Configurar `NEXTAUTH_URL` con la URL del frontend y `NEXTAUTH_SECRET`.
+
+- Automatización y Blueprints (Infrastructure as Code):
+  1. Crear el archivo `render.yaml` (Blueprint) en el repositorio para desplegar 
+     ambos servicios de forma sincronizada con 1 clic.
+  2. Configurar Auto-Deploy para que cada push a la rama `main` o `Develop` 
+     reconstruya y publique la nueva versión automáticamente sin intervención manual.
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+16. EDICIÓN ATÓMICA Y REGENERACIÓN FOCALIZADA DE CONSIGNAS CON IA
+--------------------------------------------------------------------------------
+- Problema actual:
+  Al solicitar un cambio en una pregunta, el sistema regenera el examen completo, 
+  perdiendo las consignas que el docente ya había aprobado o editado.
+
+- Solución propuesta:
+  1. Edición manual directa: Inputs editables en tiempo real para cada campo 
+     de la pregunta (enunciado, respuesta esperada, puntaje).
+  2. Regeneración atómica por pregunta: Botón "✨ Ajustar con IA" individual 
+     en cada tarjeta de pregunta que permita:
+     - Cambiar la dificultad (Fácil / Media / Difícil).
+     - Cambiar el tipo de pregunta (Desarrollo / Opción múltiple / V o F).
+     - Regenerar enunciado manteniendo el mismo objetivo de aprendizaje.
+  3. Endpoint backend `POST /api/v1/examenes/preguntas/regenerar-individual`: 
+     Procesa y devuelve únicamente la pregunta modificada para actualizar 
+     el estado local sin tocar el resto del examen.
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+17. IMPORTACIÓN MASIVA DE ALUMNOS MEDIANTE EXCEL / CSV (ONBOARDING RÁPIDO)
+--------------------------------------------------------------------------------
+- Descripción:
+  Permitir al docente matricular a todos los alumnos de un curso en 2 segundos 
+  arrastrando un archivo `.xlsx` o `.csv` (como los que exportan los sistemas 
+  escolares, SIU Guaraní o Google Classroom).
+- Funcionamiento:
+  El sistema detecta automáticamente las columnas (Nombre, Apellido, Legajo, Email), 
+  muestra una vista previa para confirmar los datos y crea todos los alumnos 
+  en la base de datos de una sola vez.
+--------------------------------------------------------------------------------
+18. MATRICES DE RÚBRICAS DE EVALUACIÓN PERSONALIZADAS POR PREGUNTA
+--------------------------------------------------------------------------------
+- Descripción:
+  Permitir al docente definir criterios de corrección por niveles de logro 
+  (ejemplo: Excelente = 5 pts, Aceptable = 3 pts, Insuficiente = 1 pt).
+- Impacto con la IA:
+  La IA utiliza la matriz de la rúbrica para calificar de manera transparente 
+  y justificar con exactitud por qué asignó ese puntaje específico al alumno, 
+  reduciendo reclamos y aumentando la consistencia de corrección.
+--------------------------------------------------------------------------------
+19. MODO DE CORRECCIÓN A CIEGAS (BLIND GRADING / ANTI-SESGO)
+--------------------------------------------------------------------------------
+- Descripción:
+  Opción para ocultar el nombre y legajo de los alumnos durante la etapa de 
+  corrección y revisión docente (mostrando únicamente "Entrega #1, Entrega #2").
+- Impacto:
+  Garantiza una evaluación 100% objetiva y libre de sesgos inconscientes. 
+  Una vez que el profesor aprueba y publica las notas, las identidades de los 
+  alumnos se revelan automáticamente.
+--------------------------------------------------------------------------------
+20. GUARDADO AUTOMÁTICO EN LOCAL (AUTOSAVE / RESILIENCIA ANTE CORTES DE RED)
+--------------------------------------------------------------------------------
+- Descripción:
+  Guardar cada cambio de consigna, edición de notas o corrección en el almacenamiento 
+  local del navegador (IndexedDB/LocalStorage) en tiempo real.
+- Impacto:
+  Si al profesor se le corta internet, se le apaga la laptop o cierra la pestaña 
+  por error, al volver a abrir EvalIA no pierde nada de su trabajo y el sistema 
+  se sincroniza solo con el servidor.
+--------------------------------------------------------------------------------
+21. HISTORIAL DE VERSIONES Y AUDITORÍA DE CAMBIOS EN EL EXAMEN
+--------------------------------------------------------------------------------
+- Descripción:
+  Permite al docente ver el historial de cambios de un examen (ej: "Ayer a las 18:00 
+  se cambió el puntaje de la pregunta 2 de 3 a 5 puntos").
+- Funcionamiento:
+  Permite restaurar versiones anteriores si un cambio de la IA o una edición 
+  manual no convence al profesor.
+--------------------------------------------------------------------------------
+
+
+
+
+
+
