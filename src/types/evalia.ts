@@ -14,6 +14,9 @@ export interface Course {
   anio: string; // e.g. "2°"
   division: string; // e.g. "A"
   anioLectivo: string; // e.g. "2026"
+  nombre?: string;
+  alumnos?: any[];
+  examenes?: any[];
   alumnosCount?: number;
   examenesCount?: number;
 }

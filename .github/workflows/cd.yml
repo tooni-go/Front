@@ -1,0 +1,35 @@
+name: Frontend CD (Deploy to VPS)
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            # Ir al directorio del proyecto en el servidor
+            cd /app/evalia/Front
+            
+            # Traer los cambios de la rama main
+            git checkout main
+            git pull origin main
+            
+            # Re-levantar contenedores con Compose reconstruyendo la imagen
+            docker compose down
+            docker compose up -d --build
+            
+            # Limpiar imágenes huérfanas
+            docker image prune -f

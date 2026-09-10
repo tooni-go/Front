@@ -1,0 +1,36 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [ Develop, main ]
+  pull_request:
+    branches: [ Develop, main ]
+
+jobs:
+  lint-typecheck-build:
+    name: Lint, Typecheck & Build
+    runs-on: ubuntu-latest
+    env:
+      NEXTAUTH_SECRET: "ci_dummy_nextauth_secret_for_build"
+      NEXTAUTH_URL: "http://localhost:3001"
+      NEXT_PUBLIC_API_URL: "http://localhost:3000"
+      NEXT_TELEMETRY_DISABLED: 1
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install --include=optional
+
+      - name: Check TypeScript types
+        run: npx tsc --noEmit
+
+      - name: Build Next.js application
+        run: npm run build
