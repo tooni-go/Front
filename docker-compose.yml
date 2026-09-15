@@ -1,7 +1,7 @@
 services:
   backend:
     build:
-      context: ../../BackPasantia/Backend-App
+      context: ../Backend-App
       dockerfile: Dockerfile
     ports:
       - "3000:3000"

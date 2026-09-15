@@ -15,6 +15,7 @@ import {
   AlertCircle,
   AlertTriangle,
 } from 'lucide-react';
+import { AjustarPreguntaIaModal } from '../Common/AjustarPreguntaIaModal';
 
 interface BackendCreatedExam {
   id: string;
@@ -54,6 +55,7 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
       },
     ]
   );
+  const [ajustarModalQuestion, setAjustarModalQuestion] = useState<Question | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -249,15 +251,26 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
                   <span className="text-xs font-bold text-indigo-400">
                     Pregunta N° {q.numero}
                   </span>
-                  {preguntas.length > 1 && (
+                  <div className="flex items-center gap-2">
                     <button
-                      onClick={() => handleRemoveQuestion(q.id)}
-                      className="p-1 text-rose-400 hover:bg-rose-950/50 rounded-lg transition-colors"
-                      title="Eliminar pregunta"
+                      type="button"
+                      onClick={() => setAjustarModalQuestion(q)}
+                      className="px-3 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 hover:text-white rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>Ajustar con IA</span>
                     </button>
-                  )}
+                    {preguntas.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveQuestion(q.id)}
+                        className="p-1 text-rose-400 hover:bg-rose-950/50 rounded-lg transition-colors"
+                        title="Eliminar pregunta"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Consigna */}
@@ -369,6 +382,39 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Modal Ajustar Pregunta con IA */}
+      {ajustarModalQuestion && (
+        <AjustarPreguntaIaModal
+          isOpen={!!ajustarModalQuestion}
+          onClose={() => setAjustarModalQuestion(null)}
+          pregunta={{
+            id: ajustarModalQuestion.id,
+            numero: ajustarModalQuestion.numero,
+            consigna: ajustarModalQuestion.consigna,
+            respuestaEsperada: ajustarModalQuestion.respuestaEsperada,
+            puntajeMaximo: Number(ajustarModalQuestion.puntajeMaximo) || 0,
+            criteriosIA: ajustarModalQuestion.criteriosIA || '',
+            esEvaluacionVisual: ajustarModalQuestion.esEvaluacionVisual ?? false,
+          }}
+          onAplicarCambio={(cambios) => {
+            setPreguntas((prev) =>
+              prev.map((q) =>
+                q.id === ajustarModalQuestion.id
+                  ? {
+                      ...q,
+                      consigna: cambios.consigna,
+                      respuestaEsperada: cambios.respuestaEsperada,
+                      ...(cambios.esEvaluacionVisual !== undefined
+                        ? { esEvaluacionVisual: cambios.esEvaluacionVisual }
+                        : {}),
+                    }
+                  : q
+              )
+            );
+          }}
+        />
+      )}
     </div>
   );
 };
