@@ -20,15 +20,15 @@ Lista de tareas desglosadas para implementar y verificar el hosting unificado en
   - Desplegar y validar logs de arranque exitoso.
 
 ## 3. Configuración y Despliegue del Frontend (`Front`)
-- [ ] **Crear el Web Service de Frontend en Render (`evalia-frontend`):**
+- [x] **Crear el Web Service de Frontend en Render (`evalia-frontend`):**
   - Conectar el repositorio de GitHub `Front`.
   - Configurar las variables de entorno (`NEXT_PUBLIC_API_URL`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`).
   - Desplegar y validar build exitoso de Next.js.
 
 ## 4. Integración, Seguridad y Pruebas
-- [ ] **Actualizar Credenciales de Google OAuth:**
+- [x] **Actualizar Credenciales de Google OAuth:**
   - Registrar la URL de producción de Render en Google Cloud Console.
-- [ ] **Validación End-to-End en Producción:**
-  - Iniciar sesión en `https://evalia-frontend.onrender.com`.
+- [x] **Validación End-to-End en Producción:**
+  - Iniciar sesión en `https://front-k6jf.onrender.com`.
   - Crear un curso/examen de prueba y verificar que se persiste en PostgreSQL en Render.
   - Verificar que no existan errores de CORS ni bloqueos en consola.
