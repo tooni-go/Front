@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Plus, Trash2, Save, ArrowLeft, HelpCircle, AlertTriangle, Loader2, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, Save, ArrowLeft, HelpCircle, AlertTriangle, Loader2, CheckCircle2, Sparkles } from 'lucide-react';
 import { fetchApi } from '@/src/lib/api';
+import { AjustarPreguntaIaModal } from '@/src/components/Common/AjustarPreguntaIaModal';
 
 export const ExamenEditarView: React.FC = () => {
   const params = useParams<{ id: string }>();
@@ -24,6 +25,7 @@ export const ExamenEditarView: React.FC = () => {
   const [showWarningModal, setShowWarningModal] = useState(false);
 
   const [preguntas, setPreguntas] = useState<any[]>([]);
+  const [ajustarModalQuestion, setAjustarModalQuestion] = useState<any | null>(null);
 
   useEffect(() => {
     if (!examId) return;
@@ -43,6 +45,7 @@ export const ExamenEditarView: React.FC = () => {
             respuestaEsperada: p.respuestaEsperada,
             puntajeMaximo: p.puntajeMaximo,
             criteriosIA: p.criteriosIA || '',
+            esEvaluacionVisual: p.esEvaluacionVisual ?? false,
           }));
           setPreguntas(loadedPreguntas);
         } else {
@@ -53,6 +56,7 @@ export const ExamenEditarView: React.FC = () => {
               consigna: '',
               respuestaEsperada: '',
               puntajeMaximo: '',
+              esEvaluacionVisual: false,
             },
           ]);
         }
@@ -258,16 +262,27 @@ export const ExamenEditarView: React.FC = () => {
                     Pregunta N° {q.numero}
                   </span>
 
-                  {preguntas.length > 1 && (
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => handleRemoveQuestion(q.id)}
-                      className="p-1.5 text-rose-400 hover:bg-rose-950/50 rounded-lg transition-colors"
-                      title="Eliminar pregunta"
+                      onClick={() => setAjustarModalQuestion(q)}
+                      className="px-3 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 hover:text-white rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>Ajustar con IA</span>
                     </button>
-                  )}
+
+                    {preguntas.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveQuestion(q.id)}
+                        className="p-1.5 text-rose-400 hover:bg-rose-950/50 rounded-lg transition-colors"
+                        title="Eliminar pregunta"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div>
@@ -392,6 +407,40 @@ export const ExamenEditarView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Modal Ajustar Pregunta con IA */}
+      {ajustarModalQuestion && (
+        <AjustarPreguntaIaModal
+          isOpen={!!ajustarModalQuestion}
+          onClose={() => setAjustarModalQuestion(null)}
+          pregunta={{
+            id: ajustarModalQuestion.id,
+            numero: ajustarModalQuestion.numero,
+            consigna: ajustarModalQuestion.consigna,
+            respuestaEsperada: ajustarModalQuestion.respuestaEsperada,
+            puntajeMaximo: Number(ajustarModalQuestion.puntajeMaximo) || 0,
+            criteriosIA: ajustarModalQuestion.criteriosIA || criteriosIA || '',
+            esEvaluacionVisual: ajustarModalQuestion.esEvaluacionVisual ?? false,
+          }}
+          onAplicarCambio={(cambios) => {
+            setPreguntas((prev) =>
+              prev.map((q) =>
+                q.id === ajustarModalQuestion.id
+                  ? {
+                      ...q,
+                      consigna: cambios.consigna,
+                      respuestaEsperada: cambios.respuestaEsperada,
+                      ...(cambios.esEvaluacionVisual !== undefined
+                        ? { esEvaluacionVisual: cambios.esEvaluacionVisual }
+                        : {}),
+                    }
+                  : q
+              )
+            );
+          }}
+        />
+      )}
     </div>
   );
 };
+
