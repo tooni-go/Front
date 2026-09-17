@@ -22,8 +22,10 @@ import {
   Edit,
   Copy,
   Trash2,
-  MoreVertical
+  MoreVertical,
+  BarChart3,
 } from 'lucide-react';
+import { ExamenAnaliticasDashboard } from '../Examenes/Analiticas/ExamenAnaliticasDashboard';
 
 interface BackendPregunta {
   id: string;
@@ -112,6 +114,7 @@ export const ExamenDetalleView: React.FC = () => {
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [myCourses, setMyCourses] = useState<any[]>([]);
   const [targetCourseId, setTargetCourseId] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'entregas' | 'analiticas'>('entregas');
 
   useEffect(() => {
     if (!params.id) return;
@@ -318,77 +321,118 @@ export const ExamenDetalleView: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <FileText className="w-4 h-4 text-indigo-400" />
-            Últimas entregas ({deliveries.length})
-          </h2>
-          {deliveries.length > 0 && (
-            <button
-              onClick={() => router.push(`/entregas/nueva?examenId=${exam.id}`)}
-              className="text-xs font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
-            >
-              <Upload className="w-3.5 h-3.5" />
-              <span>Cargar Nueva Entrega</span>
-            </button>
-          )}
-        </div>
+      {/* Selector de Pestañas (Tabs) */}
+      <div className="flex items-center gap-2 border-b border-slate-800">
+        <button
+          type="button"
+          onClick={() => setActiveTab('entregas')}
+          className={`flex items-center gap-2 px-5 py-3 font-bold text-xs rounded-t-2xl border-t border-x transition-all select-none ${
+            activeTab === 'entregas'
+              ? 'bg-slate-900 text-white border-slate-800 border-b-2 border-b-slate-900 -mb-px shadow-lg'
+              : 'text-slate-400 hover:text-slate-200 border-transparent hover:bg-slate-900/40'
+          }`}
+        >
+          <FileText className={`w-4 h-4 ${activeTab === 'entregas' ? 'text-indigo-400' : 'text-slate-500'}`} />
+          <span>Entregas ({deliveries.length})</span>
+        </button>
 
-        {deliveries.length === 0 ? (
-          <div className="text-center py-8 space-y-3">
-            <p className="text-xs text-slate-500 italic">No se han registrado entregas para este examen aún.</p>
-            <button
-              onClick={() => router.push(`/entregas/nueva?examenId=${exam.id}`)}
-              className="py-2 px-4 bg-indigo-600 text-white rounded-xl text-xs font-bold"
-            >
-              Cargar primera entrega
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {deliveries.map((delivery) => (
-              <div
-                key={delivery.id}
-                className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl hover:border-indigo-500/40 transition-all flex items-center justify-between gap-4"
+        <button
+          type="button"
+          onClick={() => setActiveTab('analiticas')}
+          className={`flex items-center gap-2 px-5 py-3 font-bold text-xs rounded-t-2xl border-t border-x transition-all select-none ${
+            activeTab === 'analiticas'
+              ? 'bg-slate-900 text-white border-slate-800 border-b-2 border-b-slate-900 -mb-px shadow-lg'
+              : 'text-slate-400 hover:text-slate-200 border-transparent hover:bg-slate-900/40'
+          }`}
+        >
+          <BarChart3 className={`w-4 h-4 ${activeTab === 'analiticas' ? 'text-indigo-400' : 'text-slate-500'}`} />
+          <span>Analíticas Pedagógicas</span>
+          <span className="px-1.5 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-800/40 text-[10px] font-bold">
+            Métricas
+          </span>
+        </button>
+      </div>
+
+      {activeTab === 'entregas' ? (
+        <div className="bg-slate-900 border border-slate-800 rounded-b-3xl rounded-tr-3xl p-6 shadow-xl space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <FileText className="w-4 h-4 text-indigo-400" />
+              Últimas entregas ({deliveries.length})
+            </h2>
+            {deliveries.length > 0 && (
+              <button
+                onClick={() => router.push(`/entregas/nueva?examenId=${exam.id}`)}
+                className="text-xs font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
               >
-                <div className="space-y-1">
-                  <h3 className="text-sm font-bold text-white">{delivery.studentName}</h3>
-                  <div className="flex items-center gap-3 text-[11px] text-slate-400">
-                    <span>Fecha entrega: {delivery.fechaEntrega}</span>
-                    <span>&bull;</span>
-                    <span>Nota Docente: <strong className="text-white">{delivery.notaDocente}</strong>/100</span>
+                <Upload className="w-3.5 h-3.5" />
+                <span>Cargar Nueva Entrega</span>
+              </button>
+            )}
+          </div>
+
+          {deliveries.length === 0 ? (
+            <div className="text-center py-8 space-y-3">
+              <p className="text-xs text-slate-500 italic">No se han registrado entregas para este examen aún.</p>
+              <button
+                onClick={() => router.push(`/entregas/nueva?examenId=${exam.id}`)}
+                className="py-2 px-4 bg-indigo-600 text-white rounded-xl text-xs font-bold"
+              >
+                Cargar primera entrega
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {deliveries.map((delivery) => (
+                <div
+                  key={delivery.id}
+                  className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl hover:border-indigo-500/40 transition-all flex items-center justify-between gap-4"
+                >
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-bold text-white">{delivery.studentName}</h3>
+                    <div className="flex items-center gap-3 text-[11px] text-slate-400">
+                      <span>Fecha entrega: {delivery.fechaEntrega}</span>
+                      <span>&bull;</span>
+                      <span>Nota Docente: <strong className="text-white">{delivery.notaDocente}</strong>/100</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {delivery.estado === 'Publicada' && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-950 text-emerald-300 border border-emerald-800/40 rounded-full text-xs font-semibold">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> ✔ Publicada
+                      </span>
+                    )}
+                    {delivery.estado === 'Pendiente' && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-950 text-amber-300 border border-amber-800/40 rounded-full text-xs font-semibold">
+                        <Clock className="w-3.5 h-3.5 text-amber-400" /> ⏳ Pendiente
+                      </span>
+                    )}
+                    {delivery.estado === 'Revisión' && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-950 text-rose-300 border border-rose-800/40 rounded-full text-xs font-semibold">
+                        <AlertTriangle className="w-3.5 h-3.5 text-rose-400" /> ⚠ Revisión
+                      </span>
+                    )}
+                    <button
+                      onClick={() => handleOpenDelivery(delivery.id, delivery.estado)}
+                      className="py-2 px-3.5 bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-1"
+                    >
+                      <span>Abrir</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  {delivery.estado === 'Publicada' && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-950 text-emerald-300 border border-emerald-800/40 rounded-full text-xs font-semibold">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> ✔ Publicada
-                    </span>
-                  )}
-                  {delivery.estado === 'Pendiente' && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-950 text-amber-300 border border-amber-800/40 rounded-full text-xs font-semibold">
-                      <Clock className="w-3.5 h-3.5 text-amber-400" /> ⏳ Pendiente
-                    </span>
-                  )}
-                  {delivery.estado === 'Revisión' && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-950 text-rose-300 border border-rose-800/40 rounded-full text-xs font-semibold">
-                      <AlertTriangle className="w-3.5 h-3.5 text-rose-400" /> ⚠ Revisión
-                    </span>
-                  )}
-                  <button
-                    onClick={() => handleOpenDelivery(delivery.id, delivery.estado)}
-                    className="py-2 px-3.5 bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-1"
-                  >
-                    <span>Abrir</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <ExamenAnaliticasDashboard
+          examenId={exam.id}
+          onGoToDeliveries={() => setActiveTab('entregas')}
+          onUploadDelivery={() => router.push(`/entregas/nueva?examenId=${exam.id}`)}
+        />
+      )}
+
 
       {/* MODALS */}
       {showDeleteModal && (

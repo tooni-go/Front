@@ -102,4 +102,27 @@ export interface AiModelConfigResponse {
   geminiPrincipal?: GeminiPrincipalConfig;
 }
 
+export interface DiagnosticoPregunta {
+  preguntaId: string;
+  enunciado: string;
+  puntajeMaximo: number;
+  promedioObtenido: number | null;
+  porcentajeAcierto: number | null;
+  porcentajeError: number | null;
+}
+
+export interface ExamenMetricasResponse {
+  examenId: string;
+  titulo: string;
+  totalAlumnos: number;
+  entregasPublicadas: number;
+  notaPromedio: number | null;
+  notaMaxima: number | null;
+  notaMinima: number | null;
+  porcentajeAprobacion: number | null;
+  puntajeTotalExamen: number;
+  diagnosticoPorPregunta: DiagnosticoPregunta[];
+}
+
+
 
