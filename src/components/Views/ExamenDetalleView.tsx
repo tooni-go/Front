@@ -24,8 +24,11 @@ import {
   Trash2,
   MoreVertical,
   BarChart3,
+  Printer,
 } from 'lucide-react';
 import { ExamenAnaliticasDashboard } from '../Examenes/Analiticas/ExamenAnaliticasDashboard';
+import { ModalPreferenciasMembrete, PrintPreferences } from '../Examenes/ModalPreferenciasMembrete';
+import { ExamenImprimible } from '../Examenes/ExamenImprimible';
 
 interface BackendPregunta {
   id: string;
@@ -115,6 +118,8 @@ export const ExamenDetalleView: React.FC = () => {
   const [myCourses, setMyCourses] = useState<any[]>([]);
   const [targetCourseId, setTargetCourseId] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'entregas' | 'analiticas'>('entregas');
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [printPrefs, setPrintPrefs] = useState<PrintPreferences | null>(null);
 
   useEffect(() => {
     if (!params.id) return;
@@ -185,6 +190,14 @@ export const ExamenDetalleView: React.FC = () => {
     } else {
       router.push(`/entregas/${deliveryId}/correccion-ia`);
     }
+  };
+
+  const handlePrint = (prefs: PrintPreferences) => {
+    setPrintPrefs(prefs);
+    setShowPrintModal(false);
+    setTimeout(() => {
+      window.print();
+    }, 100);
   };
 
   if (isLoading) {
@@ -270,6 +283,14 @@ export const ExamenDetalleView: React.FC = () => {
               csvLabel="Reporte CSV"
               csvDescription="Datos tabulares para Excel"
             />
+
+            <button
+              onClick={() => setShowPrintModal(true)}
+              className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2"
+            >
+              <Printer className="w-4 h-4 text-emerald-400" />
+              <span>Imprimir / PDF</span>
+            </button>
 
             <button
               onClick={() => router.push(`/examenes/${exam.id}/preguntas`)}
@@ -506,6 +527,20 @@ export const ExamenDetalleView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {showPrintModal && (
+        <ModalPreferenciasMembrete 
+          onClose={() => setShowPrintModal(false)}
+          onPrint={handlePrint}
+        />
+      )}
+
+      <ExamenImprimible 
+        exam={exam} 
+        course={course} 
+        prefs={printPrefs} 
+      />
     </div>
   );
 };
+
