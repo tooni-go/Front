@@ -257,7 +257,6 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
 
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-indigo-900/50 to-slate-900 border border-indigo-500/30 rounded-3xl p-6 shadow-2xl space-y-2">
-
         <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-500/10 border border-indigo-500/30 rounded-full text-indigo-300 text-xs font-semibold">
           <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
           Extracción Inteligente Completada

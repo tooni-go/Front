@@ -564,4 +564,3 @@ export const ExamenEditarView: React.FC = () => {
     </div>
   );
 };
-
