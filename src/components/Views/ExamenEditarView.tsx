@@ -1,10 +1,31 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Plus, Trash2, Save, ArrowLeft, HelpCircle, AlertTriangle, Loader2, CheckCircle2, Sparkles } from 'lucide-react';
+import {
+  Plus,
+  Trash2,
+  Save,
+  ArrowLeft,
+  HelpCircle,
+  AlertTriangle,
+  Loader2,
+  CheckCircle2,
+  Sparkles,
+  History,
+  RotateCcw,
+} from 'lucide-react';
 import { fetchApi } from '@/src/lib/api';
 import { AjustarPreguntaIaModal } from '@/src/components/Common/AjustarPreguntaIaModal';
+import { useAutosaveDraft } from '@/src/hooks/useAutosaveDraft';
+import { AutosaveBadge } from '../Common/AutosaveBadge';
+
+interface ExamenEditarDraft {
+  titulo: string;
+  fecha: string;
+  criteriosIA: string;
+  preguntas: any[];
+}
 
 export const ExamenEditarView: React.FC = () => {
   const params = useParams<{ id: string }>();
@@ -19,6 +40,7 @@ export const ExamenEditarView: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [showRestoreBanner, setShowRestoreBanner] = useState(true);
   
   const [isLoading, setIsLoading] = useState(true);
   const [entregasCount, setEntregasCount] = useState(0);
@@ -26,6 +48,48 @@ export const ExamenEditarView: React.FC = () => {
 
   const [preguntas, setPreguntas] = useState<any[]>([]);
   const [ajustarModalQuestion, setAjustarModalQuestion] = useState<any | null>(null);
+
+  // Hook de autoguardado en localStorage
+  const draftKey = examId ? `evalia_draft_editar_${examId}` : '';
+  const currentFormData = useMemo<ExamenEditarDraft>(
+    () => ({
+      titulo,
+      fecha,
+      criteriosIA,
+      preguntas,
+    }),
+    [titulo, fecha, criteriosIA, preguntas]
+  );
+
+  const {
+    lastSavedAt,
+    isSaving: isAutosaving,
+    hasSavedDraft,
+    savedDraftData,
+    savedDraftMeta,
+    clearDraft,
+    isOnline,
+  } = useAutosaveDraft<ExamenEditarDraft>({
+    key: draftKey,
+    data: currentFormData,
+    enabled: Boolean(examId && !isLoading && !success && !isSaving),
+  });
+
+  const handleRestoreDraft = () => {
+    if (!savedDraftData) return;
+    if (typeof savedDraftData.titulo === 'string') setTitulo(savedDraftData.titulo);
+    if (typeof savedDraftData.fecha === 'string') setFecha(savedDraftData.fecha);
+    if (typeof savedDraftData.criteriosIA === 'string') setCriteriosIA(savedDraftData.criteriosIA);
+    if (Array.isArray(savedDraftData.preguntas) && savedDraftData.preguntas.length > 0) {
+      setPreguntas(savedDraftData.preguntas);
+    }
+    setShowRestoreBanner(false);
+  };
+
+  const handleDiscardDraft = () => {
+    clearDraft();
+    setShowRestoreBanner(false);
+  };
 
   useEffect(() => {
     if (!examId) return;
@@ -38,6 +102,11 @@ export const ExamenEditarView: React.FC = () => {
         setEntregasCount(data.entregas?.length || 0);
         
         if (data.preguntas && data.preguntas.length > 0) {
+          const firstWithCriteria = data.preguntas.find((p: any) => p.criteriosIA);
+          if (firstWithCriteria?.criteriosIA) {
+            setCriteriosIA(firstWithCriteria.criteriosIA);
+          }
+
           const loadedPreguntas = data.preguntas.map((p: any, idx: number) => ({
             id: p.id || `q-${idx}`,
             numero: idx + 1,
@@ -77,6 +146,7 @@ export const ExamenEditarView: React.FC = () => {
         consigna: '',
         respuestaEsperada: '',
         puntajeMaximo: '',
+        esEvaluacionVisual: false,
       },
     ]);
   };
@@ -106,14 +176,15 @@ export const ExamenEditarView: React.FC = () => {
     try {
       const payload = {
         titulo: titulo.trim(),
-        fecha: fecha.trim(), // fecha is not really used in PUT updateExamen backend but let's keep it if we update schema
+        fecha: fecha.trim() || undefined,
         puntajeTotal: puntajeTotal,
         preguntas: preguntas.map((q, idx) => ({
           enunciado: q.consigna.trim(),
           respuestaEsperada: q.respuestaEsperada.trim(),
           puntajeMaximo: Number(q.puntajeMaximo) || 0,
           orden: idx + 1,
-          criteriosIA: criteriosIA.trim() || undefined
+          criteriosIA: q.criteriosIA || criteriosIA.trim() || undefined,
+          esEvaluacionVisual: q.esEvaluacionVisual ?? false,
         }))
       };
 
@@ -121,6 +192,9 @@ export const ExamenEditarView: React.FC = () => {
         method: 'PUT',
         body: JSON.stringify(payload)
       });
+
+      // Limpiamos el borrador local tras guardar exitosamente
+      clearDraft();
 
       setSuccess(true);
       setTimeout(() => {
@@ -154,7 +228,7 @@ export const ExamenEditarView: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-200">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <button
           onClick={() => router.back()}
           className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
@@ -162,10 +236,57 @@ export const ExamenEditarView: React.FC = () => {
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Volver al examen</span>
         </button>
-        <span className="px-3 py-1 bg-slate-900 border border-slate-700 rounded-lg text-[10px] font-bold text-slate-400">
-          MODO EDICIÓN
-        </span>
+
+        <div className="flex items-center gap-3">
+          <AutosaveBadge
+            lastSavedAt={lastSavedAt}
+            isSaving={isAutosaving}
+            isOnline={isOnline}
+          />
+          <span className="px-3 py-1 bg-slate-900 border border-slate-700 rounded-lg text-[10px] font-bold text-slate-400">
+            MODO EDICIÓN
+          </span>
+        </div>
       </div>
+
+      {/* Banner de recuperación de borrador previo */}
+      {hasSavedDraft && showRestoreBanner && savedDraftMeta && (
+        <div className="bg-indigo-950/70 border border-indigo-500/40 rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl animate-in fade-in duration-300">
+          <div className="flex items-start gap-3.5">
+            <div className="p-2.5 rounded-2xl bg-indigo-900/60 border border-indigo-700/50 text-indigo-300 shrink-0">
+              <History className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-xs font-bold text-white flex items-center gap-2 flex-wrap">
+                <span>Borrador no guardado disponible</span>
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-indigo-900/90 text-indigo-300 font-semibold border border-indigo-700/60">
+                  {savedDraftMeta.updatedAt.toLocaleString('es-ES')}
+                </span>
+              </h3>
+              <p className="text-xs text-indigo-200/80 leading-relaxed">
+                Tenés modificaciones guardadas en este equipo para este examen con {savedDraftData?.preguntas?.length || 0} consignas. ¿Querés restaurarlas?
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-auto">
+            <button
+              type="button"
+              onClick={handleDiscardDraft}
+              className="px-3.5 py-2 text-xs font-semibold text-slate-400 hover:text-rose-300 transition-colors"
+            >
+              Descartar
+            </button>
+            <button
+              type="button"
+              onClick={handleRestoreDraft}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-1.5"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Restaurar borrador</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6 relative">
         {success && (
