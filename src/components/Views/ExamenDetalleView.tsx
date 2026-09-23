@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { fetchApi } from '../../lib/api';
 import { Exam, Course, Question } from '../../types/evalia';
 import { ReportExportDropdown } from '../Common/ReportExportDropdown';
@@ -103,6 +104,7 @@ function mapBackendExam(be: BackendExamen): { exam: Exam; course: Course | null 
 export const ExamenDetalleView: React.FC = () => {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const { data: session } = useSession();
 
   const [exam, setExam] = useState<Exam | null>(null);
   const [course, setCourse] = useState<Course | null>(null);
@@ -532,6 +534,7 @@ export const ExamenDetalleView: React.FC = () => {
         <ModalPreferenciasMembrete 
           onClose={() => setShowPrintModal(false)}
           onPrint={handlePrint}
+          defaultDocente={session?.user?.name || ''}
         />
       )}
 

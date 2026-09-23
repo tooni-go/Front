@@ -213,8 +213,8 @@ export const CursoDetalleView: React.FC<CursoDetalleViewProps> = ({ courseId: pr
               </button>
             </div>
           ) : (
-            <div className="space-y-2">
-              {students.slice(0, 5).map((student) => (
+            <div className="space-y-2 max-h-[320px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+              {students.map((student) => (
                 <div key={student.id} className="flex items-center justify-between p-3 bg-slate-950/60 border border-slate-800/80 rounded-xl hover:border-slate-700 transition-all">
                   <div>
                     <p className="text-xs font-bold text-slate-200">{student.nombre} {student.apellido || ''}</p>

@@ -1,4 +1,19 @@
 services:
+  db:
+    image: postgres:15-alpine
+    container_name: evalia-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: evalia_user
+      POSTGRES_PASSWORD: evalia_password
+      POSTGRES_DB: evalia_db
+    ports:
+      - "5433:5432" # Expuesto en el 5433 para evitar conflictos en tu máquina
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - evalia-network
+
   backend:
     build:
       context: ../Backend-App
@@ -8,10 +23,11 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - DATABASE_URL=file:./dev.db
+      - DATABASE_URL=postgresql://evalia_user:evalia_password@db:5432/evalia_db
     volumes:
-      - backend-db:/app/prisma
       - backend-uploads:/app/uploads
+    depends_on:
+      - db
     networks:
       - evalia-network
     restart: always
@@ -32,7 +48,7 @@ services:
     restart: always
 
 volumes:
-  backend-db:
+  postgres-data:
   backend-uploads:
 
 networks:

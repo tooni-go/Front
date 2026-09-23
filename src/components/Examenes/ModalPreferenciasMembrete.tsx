@@ -12,12 +12,13 @@ export interface PrintPreferences {
 interface ModalPreferenciasMembreteProps {
   onClose: () => void;
   onPrint: (prefs: PrintPreferences) => void;
+  defaultDocente?: string;
 }
 
-export const ModalPreferenciasMembrete: React.FC<ModalPreferenciasMembreteProps> = ({ onClose, onPrint }) => {
+export const ModalPreferenciasMembrete: React.FC<ModalPreferenciasMembreteProps> = ({ onClose, onPrint, defaultDocente = '' }) => {
   const [prefs, setPrefs] = useState<PrintPreferences>({
     institucion: 'Colegio Nacional',
-    docente: '',
+    docente: defaultDocente,
     instrucciones: 'Lee atentamente cada consigna antes de responder. Escribe con letra clara y legible.',
     mostrarPuntajes: true,
     espacioRenglones: 'mediano',

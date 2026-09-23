@@ -34,20 +34,58 @@ export const ImportacionDropzone: React.FC<ImportacionDropzoneProps> = ({ onData
     }
   };
 
-  const handleFile = (file: File) => {
-    if (file.type !== 'text/csv' && !file.name.endsWith('.csv') && file.type !== 'application/vnd.ms-excel') {
-      alert('Por favor sube un archivo CSV válido.');
+  const handleFile = async (file: File) => {
+    const isCsv = file.type === 'text/csv' || file.name.endsWith('.csv');
+    const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.type.includes('excel') || file.type.includes('spreadsheetml');
+
+    if (!isCsv && !isExcel) {
+      alert('Por favor sube un archivo CSV o Excel (.xlsx, .xls) válido.');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      if (text) {
-        parseCSV(text);
+    if (isExcel) {
+      try {
+        const xlsx = await import('xlsx');
+        const buffer = await file.arrayBuffer();
+        const workbook = xlsx.read(buffer, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const jsonData = xlsx.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+        
+        if (jsonData.length < 2) {
+          alert('El archivo Excel debe tener al menos una fila de encabezados y una de datos.');
+          return;
+        }
+
+        const headers = jsonData[0].map(h => String(h).trim().toLowerCase());
+        const parsedData = jsonData.slice(1).map(row => {
+          const rowData: any = {};
+          headers.forEach((h, i) => {
+            rowData[h] = row[i] !== undefined ? String(row[i]).trim() : '';
+          });
+          return {
+            nombre: rowData['nombre'] || rowData['name'] || '',
+            apellido: rowData['apellido'] || rowData['last_name'] || rowData['lastname'] || '',
+            legajo: rowData['legajo'] || rowData['dni'] || '',
+            email: rowData['email'] || rowData['correo'] || ''
+          };
+        }).filter(r => r.nombre || r.apellido || r.legajo);
+
+        onDataParsed(parsedData);
+      } catch (error) {
+        console.error("Error leyendo excel:", error);
+        alert('Hubo un error al leer el archivo Excel.');
       }
-    };
-    reader.readAsText(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        if (text) {
+          parseCSV(text);
+        }
+      };
+      reader.readAsText(file);
+    }
   };
 
   const parseCSV = (text: string) => {
@@ -88,21 +126,20 @@ export const ImportacionDropzone: React.FC<ImportacionDropzoneProps> = ({ onData
     >
       <input
         type="file"
-        accept=".csv,text/csv"
+        accept=".csv,text/csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
         className="hidden"
         ref={fileInputRef}
         onChange={handleFileChange}
       />
       <UploadCloud className="w-10 h-10 text-slate-400 mx-auto mb-4" />
       <p className="text-sm text-slate-300 font-semibold">
-        Arrastra y suelta tu archivo CSV aquí
+        Arrastra y suelta tu archivo CSV o Excel aquí
       </p>
       <p className="text-xs text-slate-500 mt-2">
-        o haz clic para seleccionar un archivo
+        o haz clic para seleccionar un archivo (.csv, .xlsx, .xls)
       </p>
       <div className="mt-4 text-[11px] text-slate-500 space-y-1">
         <p>Columnas soportadas: Nombre, Apellido, Legajo/DNI, Email/Correo</p>
-        <p>Separador de columnas: coma (,)</p>
       </div>
     </div>
   );
