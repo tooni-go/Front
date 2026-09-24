@@ -1,9 +1,29 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Plus, Trash2, Save, ArrowLeft, HelpCircle, AlertTriangle, Loader2, CheckCircle2 } from 'lucide-react';
+import {
+  Plus,
+  Trash2,
+  Save,
+  ArrowLeft,
+  HelpCircle,
+  AlertTriangle,
+  Loader2,
+  CheckCircle2,
+  History,
+  RotateCcw,
+} from 'lucide-react';
 import { fetchApi } from '@/src/lib/api';
+import { useAutosaveDraft } from '@/src/hooks/useAutosaveDraft';
+import { AutosaveBadge } from '../Common/AutosaveBadge';
+
+interface ExamenManualDraft {
+  titulo: string;
+  fecha: string;
+  criteriosIA: string;
+  preguntas: any[];
+}
 
 export const ExamenManualView: React.FC = () => {
   const params = useParams<{ id: string }>();
@@ -18,6 +38,7 @@ export const ExamenManualView: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [showRestoreBanner, setShowRestoreBanner] = useState(true);
 
   const [preguntas, setPreguntas] = useState<any[]>([
     {
@@ -28,6 +49,48 @@ export const ExamenManualView: React.FC = () => {
       puntajeMaximo: '',
     },
   ]);
+
+  // Hook de autoguardado en localStorage
+  const draftKey = courseId ? `evalia_draft_examen_${courseId}` : '';
+  const currentFormData = useMemo<ExamenManualDraft>(
+    () => ({
+      titulo,
+      fecha,
+      criteriosIA,
+      preguntas,
+    }),
+    [titulo, fecha, criteriosIA, preguntas]
+  );
+
+  const {
+    lastSavedAt,
+    isSaving: isAutosaving,
+    hasSavedDraft,
+    savedDraftData,
+    savedDraftMeta,
+    clearDraft,
+    isOnline,
+  } = useAutosaveDraft<ExamenManualDraft>({
+    key: draftKey,
+    data: currentFormData,
+    enabled: Boolean(courseId && !success && !isSaving),
+  });
+
+  const handleRestoreDraft = () => {
+    if (!savedDraftData) return;
+    if (typeof savedDraftData.titulo === 'string') setTitulo(savedDraftData.titulo);
+    if (typeof savedDraftData.fecha === 'string') setFecha(savedDraftData.fecha);
+    if (typeof savedDraftData.criteriosIA === 'string') setCriteriosIA(savedDraftData.criteriosIA);
+    if (Array.isArray(savedDraftData.preguntas) && savedDraftData.preguntas.length > 0) {
+      setPreguntas(savedDraftData.preguntas);
+    }
+    setShowRestoreBanner(false);
+  };
+
+  const handleDiscardDraft = () => {
+    clearDraft();
+    setShowRestoreBanner(false);
+  };
 
   useEffect(() => {
     if (!courseId) return;
@@ -90,6 +153,9 @@ export const ExamenManualView: React.FC = () => {
         body: JSON.stringify(payload)
       });
 
+      // Limpiamos el borrador local tras éxito en el backend
+      clearDraft();
+
       setSuccess(true);
       setTimeout(() => {
         router.push('/cursos/' + courseId);
@@ -104,15 +170,63 @@ export const ExamenManualView: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-200">
-      <button
-        onClick={() => router.push(`/examenes/${courseId}/metodo`)}
-        className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
-      >
-        <ArrowLeft className="w-3.5 h-3.5" />
-        <span>Cambiar método de creación</span>
-      </button>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <button
+          onClick={() => router.push(`/examenes/${courseId}/metodo`)}
+          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Cambiar método de creación</span>
+        </button>
+
+        <AutosaveBadge
+          lastSavedAt={lastSavedAt}
+          isSaving={isAutosaving}
+          isOnline={isOnline}
+        />
+      </div>
+
+      {/* Banner de recuperación de borrador previo */}
+      {hasSavedDraft && showRestoreBanner && savedDraftMeta && (
+        <div className="bg-indigo-950/70 border border-indigo-500/40 rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl animate-in fade-in duration-300">
+          <div className="flex items-start gap-3.5">
+            <div className="p-2.5 rounded-2xl bg-indigo-900/60 border border-indigo-700/50 text-indigo-300 shrink-0">
+              <History className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-xs font-bold text-white flex items-center gap-2 flex-wrap">
+                <span>Borrador no guardado disponible</span>
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-indigo-900/90 text-indigo-300 font-semibold border border-indigo-700/60">
+                  {savedDraftMeta.updatedAt.toLocaleString('es-ES')}
+                </span>
+              </h3>
+              <p className="text-xs text-indigo-200/80 leading-relaxed">
+                Tenés un borrador guardado en este equipo con {savedDraftData?.preguntas?.length || 0} consignas redactadas. ¿Querés restaurarlo?
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-auto">
+            <button
+              type="button"
+              onClick={handleDiscardDraft}
+              className="px-3.5 py-2 text-xs font-semibold text-slate-400 hover:text-rose-300 transition-colors"
+            >
+              Descartar
+            </button>
+            <button
+              type="button"
+              onClick={handleRestoreDraft}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-1.5"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Restaurar borrador</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6 relative">
+
         {success && (
           <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm z-50 rounded-3xl flex flex-col items-center justify-center animate-in fade-in">
             <CheckCircle2 className="w-16 h-16 text-emerald-500 mb-4" />
