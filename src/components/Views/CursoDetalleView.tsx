@@ -2,9 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Users, FileText, Plus, ArrowLeft, ChevronRight, Edit, Trash2, Loader2, AlertTriangle } from 'lucide-react';
+import { Users, FileText, Plus, ArrowLeft, ChevronRight, Edit, Trash2, Loader2, AlertTriangle, UploadCloud } from 'lucide-react';
 import { fetchApi } from '@/src/lib/api';
 import { ReportExportDropdown } from '../Common/ReportExportDropdown';
+import { ImportacionAlumnosModal } from '../alumnos/ImportacionAlumnosModal';
 
 interface BackendExamen {
   id: string;
@@ -55,14 +56,19 @@ export const CursoDetalleView: React.FC<CursoDetalleViewProps> = ({ courseId: pr
   const [curso, setCurso] = useState<BackendCurso | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
-  useEffect(() => {
+  const fetchCurso = () => {
     if (!courseId) return;
     setIsLoading(true);
     fetchApi<BackendCurso>(`/api/v1/cursos/${courseId}`)
       .then((data) => setCurso(data))
       .catch((err) => setLoadError(err?.message || 'No se pudo cargar el curso.'))
       .finally(() => setIsLoading(false));
+  };
+
+  useEffect(() => {
+    fetchCurso();
   }, [courseId]);
 
   const handleDeleteAlumno = async (id: string) => {
@@ -158,6 +164,13 @@ export const CursoDetalleView: React.FC<CursoDetalleViewProps> = ({ courseId: pr
             disabledReason="El curso no tiene alumnos ni exámenes para exportar"
           />
           <button
+            onClick={() => setIsImportModalOpen(true)}
+            className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2"
+          >
+            <UploadCloud className="w-4 h-4 text-indigo-400" />
+            <span> Importar alumnos </span>
+          </button>
+          <button
             onClick={() => router.push(`/alumnos/nuevo?cursoId=${courseId}`)}
             className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2"
           >
@@ -200,8 +213,8 @@ export const CursoDetalleView: React.FC<CursoDetalleViewProps> = ({ courseId: pr
               </button>
             </div>
           ) : (
-            <div className="space-y-2">
-              {students.slice(0, 5).map((student) => (
+            <div className="space-y-2 max-h-[320px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+              {students.map((student) => (
                 <div key={student.id} className="flex items-center justify-between p-3 bg-slate-950/60 border border-slate-800/80 rounded-xl hover:border-slate-700 transition-all">
                   <div>
                     <p className="text-xs font-bold text-slate-200">{student.nombre} {student.apellido || ''}</p>
@@ -285,6 +298,15 @@ export const CursoDetalleView: React.FC<CursoDetalleViewProps> = ({ courseId: pr
           )}
         </div>
       </div>
+
+      {courseId && (
+        <ImportacionAlumnosModal
+          courseId={courseId}
+          isOpen={isImportModalOpen}
+          onClose={() => setIsImportModalOpen(false)}
+          onSuccess={() => fetchCurso()}
+        />
+      )}
     </div>
   );
 };
