@@ -6,7 +6,7 @@ Lista de tareas desglosadas para implementar y verificar el ciclo de vida de ex�
 - [x] **Actualizar Tipos TypeScript en Frontend:**
   - Agregar `type EstadoExamen = 'BORRADOR' | 'PUBLICADO' | 'ARCHIVADO'` en [`src/types/evalia.ts`](file:///c:/Users/valen/OneDrive/Desktop/FrontPasantia/Front/src/types/evalia.ts).
   - Extender las interfaces `Exam` y `BackendExamen` con la propiedad opcional `estado?: EstadoExamen`.
-- [ ] **Actualizar Modelo Prisma y Migración en Backend (`Backend-App`):**
+- [x] **Actualizar Modelo Prisma y Migración en Backend (`Backend-App`):**
   - Agregar `enum EstadoExamen` y campo `estado EstadoExamen @default(BORRADOR)` al modelo `Examen` en `prisma/schema.prisma`.
   - Aplicar migración con Prisma (`npx prisma migrate dev`).
 
@@ -27,12 +27,12 @@ Lista de tareas desglosadas para implementar y verificar el ciclo de vida de ex�
 ## 4. Bloqueo de Entregas y Endpoints Backend
 - [x] **Protección en [`NuevaEntregaView.tsx`](file:///c:/Users/valen/OneDrive/Desktop/FrontPasantia/Front/src/components/Views/NuevaEntregaView.tsx):**
   - Validar el estado del examen recibido; si es `BORRADOR`, mostrar un panel informativo bloqueante que impida adjuntar archivos y redirija al detalle del examen.
-- [ ] **Endpoints y Validaciones en Backend (`Backend-App`):**
+- [x] **Endpoints y Validaciones en Backend (`Backend-App`):**
   - Implementar endpoint `PATCH /api/v1/examenes/:id/estado` con validación de al menos una pregunta para publicar.
   - Validar en `POST /api/v1/entregas` que el examen esté en `PUBLICADO`, devolviendo `HTTP 400` en caso contrario.
 
 ## 5. Pruebas y Validación
-- [ ] **Pruebas de Flujo Completo:**
+- [x] **Pruebas de Flujo Completo:**
   - Crear un examen como borrador y verificar que aparezca el badge `🟡 Borrador`.
   - Intentar subir una entrega y verificar el bloqueo visual y a nivel de API.
   - Publicar el examen desde `ExamenDetalleView` y verificar que se habilite la subida de entregas.
