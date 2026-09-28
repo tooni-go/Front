@@ -1,9 +1,27 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, Image as ImageIcon, Sparkles, Cpu, Award, Loader2, AlertCircle, RefreshCw, FileText, ExternalLink } from 'lucide-react';
+import {
+  ArrowLeft,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Image as ImageIcon,
+  Sparkles,
+  Cpu,
+  Award,
+  Loader2,
+  AlertCircle,
+  RefreshCw,
+  FileText,
+  ExternalLink,
+  History,
+  RotateCcw,
+} from 'lucide-react';
 import { fetchApi, getFileUrl, ApiError } from '../../lib/api';
+import { useAutosaveDraft } from '@/src/hooks/useAutosaveDraft';
+import { AutosaveBadge } from '../Common/AutosaveBadge';
 
 interface UiEvaluatedQuestion {
   questionId: string;
@@ -17,6 +35,10 @@ interface UiEvaluatedQuestion {
   puntajeMaximo: number;
 }
 
+interface EntregaCorreccionDraft {
+  evaluatedQuestions: UiEvaluatedQuestion[];
+}
+
 export const EntregaCorreccionIaView: React.FC = () => {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -26,10 +48,46 @@ export const EntregaCorreccionIaView: React.FC = () => {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [isApproving, setIsApproving] = useState(false);
   const [approveError, setApproveError] = useState<string | null>(null);
+  const [showRestoreBanner, setShowRestoreBanner] = useState(true);
 
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [evaluatedQuestions, setEvaluatedQuestions] = useState<UiEvaluatedQuestion[]>([]);
+
+  // Hook de autoguardado en localStorage
+  const draftKey = params.id ? `evalia_draft_entrega_${params.id}` : '';
+  const currentFormData = useMemo<EntregaCorreccionDraft>(
+    () => ({ evaluatedQuestions }),
+    [evaluatedQuestions]
+  );
+
+  const {
+    lastSavedAt,
+    isSaving: isAutosaving,
+    hasSavedDraft,
+    savedDraftData,
+    savedDraftMeta,
+    clearDraft,
+    isOnline,
+  } = useAutosaveDraft<EntregaCorreccionDraft>({
+    key: draftKey,
+    data: currentFormData,
+    enabled: Boolean(params.id && !isLoading && !isApproving && evaluatedQuestions.length > 0),
+  });
+
+  const handleRestoreDraft = () => {
+    if (!savedDraftData) return;
+    if (Array.isArray(savedDraftData.evaluatedQuestions) && savedDraftData.evaluatedQuestions.length > 0) {
+      setEvaluatedQuestions(savedDraftData.evaluatedQuestions);
+    }
+    setShowRestoreBanner(false);
+  };
+
+  const handleDiscardDraft = () => {
+    clearDraft();
+    setShowRestoreBanner(false);
+  };
+
 
   const loadEntrega = async () => {
     if (!params.id) return;
@@ -220,6 +278,9 @@ export const EntregaCorreccionIaView: React.FC = () => {
         }),
       });
 
+      // Limpiar borrador tras aprobación exitosa
+      clearDraft();
+
       if (examId) {
         router.push(`/examenes/${examId}`);
       } else {
@@ -238,13 +299,60 @@ export const EntregaCorreccionIaView: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      <button
-        onClick={() => (examId ? router.push(`/examenes/${examId}`) : router.back())}
-        className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
-      >
-        <ArrowLeft className="w-3.5 h-3.5" />
-        <span>Volver a {examTitle}</span>
-      </button>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <button
+          onClick={() => (examId ? router.push(`/examenes/${examId}`) : router.back())}
+          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Volver a {examTitle}</span>
+        </button>
+
+        <AutosaveBadge
+          lastSavedAt={lastSavedAt}
+          isSaving={isAutosaving}
+          isOnline={isOnline}
+        />
+      </div>
+
+      {/* Banner de recuperación de borrador previo */}
+      {hasSavedDraft && showRestoreBanner && savedDraftMeta && (
+        <div className="bg-indigo-950/70 border border-indigo-500/40 rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl animate-in fade-in duration-300">
+          <div className="flex items-start gap-3.5">
+            <div className="p-2.5 rounded-2xl bg-indigo-900/60 border border-indigo-700/50 text-indigo-300 shrink-0">
+              <History className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-xs font-bold text-white flex items-center gap-2 flex-wrap">
+                <span>Ajustes de calificación previos disponibles</span>
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-indigo-900/90 text-indigo-300 font-semibold border border-indigo-700/60">
+                  {savedDraftMeta.updatedAt.toLocaleString('es-ES')}
+                </span>
+              </h3>
+              <p className="text-xs text-indigo-200/80 leading-relaxed">
+                Tenías modificaciones de puntajes guardadas localmente en esta entrega. ¿Querés restaurarlas?
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-auto">
+            <button
+              type="button"
+              onClick={handleDiscardDraft}
+              className="px-3.5 py-2 text-xs font-semibold text-slate-400 hover:text-rose-300 transition-colors"
+            >
+              Descartar
+            </button>
+            <button
+              type="button"
+              onClick={handleRestoreDraft}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-1.5"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Restaurar calificaciones</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Error banner si falló la aprobación */}
       {approveError && (
@@ -256,6 +364,7 @@ export const EntregaCorreccionIaView: React.FC = () => {
 
       {/* Title Header */}
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+
         <div>
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-indigo-400 bg-indigo-950 border border-indigo-800/40 px-3 py-0.5 rounded-md">

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useEvalia } from '../../context/EvaliaContext';
 import { Question } from '../../types/evalia';
@@ -15,13 +15,24 @@ import {
   AlertCircle,
   AlertTriangle,
   Send,
+  History,
+  RotateCcw,
 } from 'lucide-react';
+import { AjustarPreguntaIaModal } from '../Common/AjustarPreguntaIaModal';
+import { useAutosaveDraft } from '@/src/hooks/useAutosaveDraft';
+import { AutosaveBadge } from '../Common/AutosaveBadge';
 
 interface BackendCreatedExam {
   id: string;
   titulo: string;
   fecha?: string;
   cursoId?: string;
+}
+
+interface ExamenRevisionDraft {
+  titulo: string;
+  fecha: string;
+  preguntas: Question[];
 }
 
 export const ExamenRevisionGeneradoView: React.FC = () => {
@@ -55,8 +66,50 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
       },
     ]
   );
+  const [ajustarModalQuestion, setAjustarModalQuestion] = useState<Question | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [showRestoreBanner, setShowRestoreBanner] = useState(true);
+
+  // Hook de autoguardado en localStorage
+  const draftKey = courseId ? `evalia_draft_revision_${courseId}` : '';
+  const currentFormData = useMemo<ExamenRevisionDraft>(
+    () => ({
+      titulo,
+      fecha,
+      preguntas,
+    }),
+    [titulo, fecha, preguntas]
+  );
+
+  const {
+    lastSavedAt,
+    isSaving: isAutosaving,
+    hasSavedDraft,
+    savedDraftData,
+    savedDraftMeta,
+    clearDraft,
+    isOnline,
+  } = useAutosaveDraft<ExamenRevisionDraft>({
+    key: draftKey,
+    data: currentFormData,
+    enabled: Boolean(courseId && !isSaving),
+  });
+
+  const handleRestoreDraft = () => {
+    if (!savedDraftData) return;
+    if (typeof savedDraftData.titulo === 'string') setTitulo(savedDraftData.titulo);
+    if (typeof savedDraftData.fecha === 'string') setFecha(savedDraftData.fecha);
+    if (Array.isArray(savedDraftData.preguntas) && savedDraftData.preguntas.length > 0) {
+      setPreguntas(savedDraftData.preguntas);
+    }
+    setShowRestoreBanner(false);
+  };
+
+  const handleDiscardDraft = () => {
+    clearDraft();
+    setShowRestoreBanner(false);
+  };
 
   const handleUpdateQuestion = (id: string, field: keyof Question, value: any) => {
     setPreguntas((prev) =>
@@ -133,6 +186,7 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
       );
 
       // Limpiamos el borrador temporal tras guardar con éxito
+      clearDraft();
       setPendingGeneratedExam(null);
       router.push(`/examenes/${created.id}`);
     } catch (err: any) {
@@ -148,13 +202,60 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-200">
-      <button
-        onClick={() => router.push(`/examenes/${courseId}/inteligente`)}
-        className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
-      >
-        <ArrowLeft className="w-3.5 h-3.5" />
-        <span>Volver a la carga de archivo/texto</span>
-      </button>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <button
+          onClick={() => router.push(`/examenes/${courseId}/inteligente`)}
+          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Volver a la carga de archivo/texto</span>
+        </button>
+
+        <AutosaveBadge
+          lastSavedAt={lastSavedAt}
+          isSaving={isAutosaving}
+          isOnline={isOnline}
+        />
+      </div>
+
+      {/* Banner de recuperación de borrador previo */}
+      {hasSavedDraft && showRestoreBanner && savedDraftMeta && (
+        <div className="bg-indigo-950/70 border border-indigo-500/40 rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl animate-in fade-in duration-300">
+          <div className="flex items-start gap-3.5">
+            <div className="p-2.5 rounded-2xl bg-indigo-900/60 border border-indigo-700/50 text-indigo-300 shrink-0">
+              <History className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-xs font-bold text-white flex items-center gap-2 flex-wrap">
+                <span>Borrador de revisión disponible</span>
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-indigo-900/90 text-indigo-300 font-semibold border border-indigo-700/60">
+                  {savedDraftMeta.updatedAt.toLocaleString('es-ES')}
+                </span>
+              </h3>
+              <p className="text-xs text-indigo-200/80 leading-relaxed">
+                Tenés modificaciones guardadas localmente de esta revisión ({savedDraftData?.preguntas?.length || 0} consignas). ¿Querés restaurarlas?
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-auto">
+            <button
+              type="button"
+              onClick={handleDiscardDraft}
+              className="px-3.5 py-2 text-xs font-semibold text-slate-400 hover:text-rose-300 transition-colors"
+            >
+              Descartar
+            </button>
+            <button
+              type="button"
+              onClick={handleRestoreDraft}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-1.5"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Restaurar borrador</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-indigo-900/50 to-slate-900 border border-indigo-500/30 rounded-3xl p-6 shadow-2xl space-y-2">
@@ -251,15 +352,26 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
                   <span className="text-xs font-bold text-indigo-400">
                     Pregunta N° {q.numero}
                   </span>
-                  {preguntas.length > 1 && (
+                  <div className="flex items-center gap-2">
                     <button
-                      onClick={() => handleRemoveQuestion(q.id)}
-                      className="p-1 text-rose-400 hover:bg-rose-950/50 rounded-lg transition-colors"
-                      title="Eliminar pregunta"
+                      type="button"
+                      onClick={() => setAjustarModalQuestion(q)}
+                      className="px-3 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 hover:text-white rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>Ajustar con IA</span>
                     </button>
-                  )}
+                    {preguntas.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveQuestion(q.id)}
+                        className="p-1 text-rose-400 hover:bg-rose-950/50 rounded-lg transition-colors"
+                        title="Eliminar pregunta"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Consigna */}
@@ -373,6 +485,39 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Modal Ajustar Pregunta con IA */}
+      {ajustarModalQuestion && (
+        <AjustarPreguntaIaModal
+          isOpen={!!ajustarModalQuestion}
+          onClose={() => setAjustarModalQuestion(null)}
+          pregunta={{
+            id: ajustarModalQuestion.id,
+            numero: ajustarModalQuestion.numero,
+            consigna: ajustarModalQuestion.consigna,
+            respuestaEsperada: ajustarModalQuestion.respuestaEsperada,
+            puntajeMaximo: Number(ajustarModalQuestion.puntajeMaximo) || 0,
+            criteriosIA: ajustarModalQuestion.criteriosIA || '',
+            esEvaluacionVisual: ajustarModalQuestion.esEvaluacionVisual ?? false,
+          }}
+          onAplicarCambio={(cambios) => {
+            setPreguntas((prev) =>
+              prev.map((q) =>
+                q.id === ajustarModalQuestion.id
+                  ? {
+                      ...q,
+                      consigna: cambios.consigna,
+                      respuestaEsperada: cambios.respuestaEsperada,
+                      ...(cambios.esEvaluacionVisual !== undefined
+                        ? { esEvaluacionVisual: cambios.esEvaluacionVisual }
+                        : {}),
+                    }
+                  : q
+              )
+            );
+          }}
+        />
+      )}
     </div>
   );
 };

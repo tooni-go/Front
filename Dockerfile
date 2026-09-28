@@ -8,6 +8,9 @@ COPY package*.json ./
 # Instalar dependencias asegurando los binarios nativos para Tailwind y Lightning CSS
 RUN npm install --include=optional && npm install @tailwindcss/oxide-linux-x64-gnu lightningcss-linux-x64-gnu
 
+# Asegurar existencia de carpeta public
+RUN mkdir -p public
+
 # Copiar el resto del código y compilar
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -19,6 +22,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3001
 ENV HOSTNAME="0.0.0.0"
+
+RUN mkdir -p public
 
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./

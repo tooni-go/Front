@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { fetchApi } from '../../lib/api';
 import { Exam, Course, Question, EstadoExamen } from '../../types/evalia';
 import { ReportExportDropdown } from '../Common/ReportExportDropdown';
@@ -24,8 +25,13 @@ import {
   Trash2,
   MoreVertical,
   Send,
-  Sparkles
+  Sparkles,
+  BarChart3,
+  Printer,
 } from 'lucide-react';
+import { ExamenAnaliticasDashboard } from '../Examenes/Analiticas/ExamenAnaliticasDashboard';
+import { ModalPreferenciasMembrete, PrintPreferences } from '../Examenes/ModalPreferenciasMembrete';
+import { ExamenImprimible } from '../Examenes/ExamenImprimible';
 
 interface BackendPregunta {
   id: string;
@@ -102,6 +108,7 @@ function mapBackendExam(be: BackendExamen): { exam: Exam; course: Course | null 
 export const ExamenDetalleView: React.FC = () => {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const { data: session } = useSession();
 
   const [exam, setExam] = useState<Exam | null>(null);
   const [course, setCourse] = useState<Course | null>(null);
@@ -118,6 +125,9 @@ export const ExamenDetalleView: React.FC = () => {
   const [targetCourseId, setTargetCourseId] = useState<string>('');
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'entregas' | 'analiticas'>('entregas');
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [printPrefs, setPrintPrefs] = useState<PrintPreferences | null>(null);
 
   const handlePublishExam = async () => {
     if (!exam) return;
@@ -213,6 +223,14 @@ export const ExamenDetalleView: React.FC = () => {
     } else {
       router.push(`/entregas/${deliveryId}/correccion-ia`);
     }
+  };
+
+  const handlePrint = (prefs: PrintPreferences) => {
+    setPrintPrefs(prefs);
+    setShowPrintModal(false);
+    setTimeout(() => {
+      window.print();
+    }, 100);
   };
 
   if (isLoading) {
@@ -317,6 +335,14 @@ export const ExamenDetalleView: React.FC = () => {
             />
 
             <button
+              onClick={() => setShowPrintModal(true)}
+              className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2"
+            >
+              <Printer className="w-4 h-4 text-emerald-400" />
+              <span>Imprimir / PDF</span>
+            </button>
+
+            <button
               onClick={() => router.push(`/examenes/${exam.id}/preguntas`)}
               className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2"
             >
@@ -419,92 +445,133 @@ export const ExamenDetalleView: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <FileText className="w-4 h-4 text-indigo-400" />
-            Últimas entregas ({deliveries.length})
-          </h2>
-          {deliveries.length > 0 && exam.estado !== 'BORRADOR' && (
-            <button
-              onClick={() => router.push(`/entregas/nueva?examenId=${exam.id}`)}
-              className="text-xs font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
-            >
-              <Upload className="w-3.5 h-3.5" />
-              <span>Cargar Nueva Entrega</span>
-            </button>
-          )}
-        </div>
+      {/* Selector de Pestañas (Tabs) */}
+      <div className="flex items-center gap-2 border-b border-slate-800">
+        <button
+          type="button"
+          onClick={() => setActiveTab('entregas')}
+          className={`flex items-center gap-2 px-5 py-3 font-bold text-xs rounded-t-2xl border-t border-x transition-all select-none ${
+            activeTab === 'entregas'
+              ? 'bg-slate-900 text-white border-slate-800 border-b-2 border-b-slate-900 -mb-px shadow-lg'
+              : 'text-slate-400 hover:text-slate-200 border-transparent hover:bg-slate-900/40'
+          }`}
+        >
+          <FileText className={`w-4 h-4 ${activeTab === 'entregas' ? 'text-indigo-400' : 'text-slate-500'}`} />
+          <span>Entregas ({deliveries.length})</span>
+        </button>
 
-        {deliveries.length === 0 ? (
-          <div className="text-center py-8 space-y-3">
-            <p className="text-xs text-slate-500 italic">
-              {exam.estado === 'BORRADOR'
-                ? 'El examen está en borrador. No se pueden registrar entregas hasta que se publique.'
-                : 'No se han registrado entregas para este examen aún.'}
-            </p>
-            {exam.estado === 'BORRADOR' ? (
-              <button
-                onClick={handlePublishExam}
-                disabled={isPublishing}
-                className="py-2 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all inline-flex items-center gap-2 disabled:opacity-50"
-              >
-                {isPublishing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                <span>Publicar examen ahora</span>
-              </button>
-            ) : (
+        <button
+          type="button"
+          onClick={() => setActiveTab('analiticas')}
+          className={`flex items-center gap-2 px-5 py-3 font-bold text-xs rounded-t-2xl border-t border-x transition-all select-none ${
+            activeTab === 'analiticas'
+              ? 'bg-slate-900 text-white border-slate-800 border-b-2 border-b-slate-900 -mb-px shadow-lg'
+              : 'text-slate-400 hover:text-slate-200 border-transparent hover:bg-slate-900/40'
+          }`}
+        >
+          <BarChart3 className={`w-4 h-4 ${activeTab === 'analiticas' ? 'text-indigo-400' : 'text-slate-500'}`} />
+          <span>Analíticas Pedagógicas</span>
+          <span className="px-1.5 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-800/40 text-[10px] font-bold">
+            Métricas
+          </span>
+        </button>
+      </div>
+
+      {activeTab === 'entregas' ? (
+        <div className="bg-slate-900 border border-slate-800 rounded-b-3xl rounded-tr-3xl p-6 shadow-xl space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <FileText className="w-4 h-4 text-indigo-400" />
+              Últimas entregas ({deliveries.length})
+            </h2>
+            {deliveries.length > 0 && exam.estado !== 'BORRADOR' && (
               <button
                 onClick={() => router.push(`/entregas/nueva?examenId=${exam.id}`)}
-                className="py-2 px-4 bg-indigo-600 text-white rounded-xl text-xs font-bold"
+                className="text-xs font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
               >
-                Cargar primera entrega
+                <Upload className="w-3.5 h-3.5" />
+                <span>Cargar Nueva Entrega</span>
               </button>
             )}
           </div>
-        ) : (
-          <div className="space-y-3">
-            {deliveries.map((delivery) => (
-              <div
-                key={delivery.id}
-                className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl hover:border-indigo-500/40 transition-all flex items-center justify-between gap-4"
-              >
-                <div className="space-y-1">
-                  <h3 className="text-sm font-bold text-white">{delivery.studentName}</h3>
-                  <div className="flex items-center gap-3 text-[11px] text-slate-400">
-                    <span>Fecha entrega: {delivery.fechaEntrega}</span>
-                    <span>&bull;</span>
-                    <span>Nota Docente: <strong className="text-white">{delivery.notaDocente}</strong>/100</span>
+
+          {deliveries.length === 0 ? (
+            <div className="text-center py-8 space-y-3">
+              <p className="text-xs text-slate-500 italic">
+                {exam.estado === 'BORRADOR'
+                  ? 'El examen está en borrador. No se pueden registrar entregas hasta que se publique.'
+                  : 'No se han registrado entregas para este examen aún.'}
+              </p>
+              {exam.estado === 'BORRADOR' ? (
+                <button
+                  onClick={handlePublishExam}
+                  disabled={isPublishing}
+                  className="py-2 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all inline-flex items-center gap-2 disabled:opacity-50"
+                >
+                  {isPublishing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                  <span>Publicar examen ahora</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => router.push(`/entregas/nueva?examenId=${exam.id}`)}
+                  className="py-2 px-4 bg-indigo-600 text-white rounded-xl text-xs font-bold"
+                >
+                  Cargar primera entrega
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {deliveries.map((delivery) => (
+                <div
+                  key={delivery.id}
+                  className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl hover:border-indigo-500/40 transition-all flex items-center justify-between gap-4"
+                >
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-bold text-white">{delivery.studentName}</h3>
+                    <div className="flex items-center gap-3 text-[11px] text-slate-400">
+                      <span>Fecha entrega: {delivery.fechaEntrega}</span>
+                      <span>&bull;</span>
+                      <span>Nota Docente: <strong className="text-white">{delivery.notaDocente}</strong>/100</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {delivery.estado === 'Publicada' && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-950 text-emerald-300 border border-emerald-800/40 rounded-full text-xs font-semibold">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> ✔ Publicada
+                      </span>
+                    )}
+                    {delivery.estado === 'Pendiente' && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-950 text-amber-300 border border-amber-800/40 rounded-full text-xs font-semibold">
+                        <Clock className="w-3.5 h-3.5 text-amber-400" /> ⏳ Pendiente
+                      </span>
+                    )}
+                    {delivery.estado === 'Revisión' && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-950 text-rose-300 border border-rose-800/40 rounded-full text-xs font-semibold">
+                        <AlertTriangle className="w-3.5 h-3.5 text-rose-400" /> ⚠ Revisión
+                      </span>
+                    )}
+                    <button
+                      onClick={() => handleOpenDelivery(delivery.id, delivery.estado)}
+                      className="py-2 px-3.5 bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-1"
+                    >
+                      <span>Abrir</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  {delivery.estado === 'Publicada' && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-950 text-emerald-300 border border-emerald-800/40 rounded-full text-xs font-semibold">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> ✔ Publicada
-                    </span>
-                  )}
-                  {delivery.estado === 'Pendiente' && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-950 text-amber-300 border border-amber-800/40 rounded-full text-xs font-semibold">
-                      <Clock className="w-3.5 h-3.5 text-amber-400" /> ⏳ Pendiente
-                    </span>
-                  )}
-                  {delivery.estado === 'Revisión' && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-950 text-rose-300 border border-rose-800/40 rounded-full text-xs font-semibold">
-                      <AlertTriangle className="w-3.5 h-3.5 text-rose-400" /> ⚠ Revisión
-                    </span>
-                  )}
-                  <button
-                    onClick={() => handleOpenDelivery(delivery.id, delivery.estado)}
-                    className="py-2 px-3.5 bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-1"
-                  >
-                    <span>Abrir</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <ExamenAnaliticasDashboard
+          examenId={exam.id}
+          onGoToDeliveries={() => setActiveTab('entregas')}
+          onUploadDelivery={() => router.push(`/entregas/nueva?examenId=${exam.id}`)}
+        />
+      )}
+
 
       {/* MODALS */}
       {showDeleteModal && (
@@ -578,6 +645,21 @@ export const ExamenDetalleView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {showPrintModal && (
+        <ModalPreferenciasMembrete 
+          onClose={() => setShowPrintModal(false)}
+          onPrint={handlePrint}
+          defaultDocente={session?.user?.name || ''}
+        />
+      )}
+
+      <ExamenImprimible 
+        exam={exam} 
+        course={course} 
+        prefs={printPrefs} 
+      />
     </div>
   );
 };
+
