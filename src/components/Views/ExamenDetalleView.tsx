@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { fetchApi } from '../../lib/api';
-import { Exam, Course, Question } from '../../types/evalia';
+import { Exam, Course, Question, EstadoExamen } from '../../types/evalia';
 import { ReportExportDropdown } from '../Common/ReportExportDropdown';
 import {
   FileText,
@@ -24,6 +24,8 @@ import {
   Copy,
   Trash2,
   MoreVertical,
+  Send,
+  Sparkles,
   BarChart3,
   Printer,
 } from 'lucide-react';
@@ -52,6 +54,7 @@ interface BackendExamen {
   id: string;
   titulo: string;
   fecha: string;
+  estado?: EstadoExamen;
   cursoId: string;
   preguntas: BackendPregunta[];
   curso?: BackendCurso;
@@ -67,7 +70,7 @@ interface LocalDelivery {
 }
 
 function mapBackendExam(be: BackendExamen): { exam: Exam; course: Course | null } {
-  const preguntas: Question[] = be.preguntas.map((p, idx) => ({
+  const preguntas: Question[] = (be.preguntas || []).map((p, idx) => ({
     id: p.id,
     numero: idx + 1,
     consigna: p.enunciado,
@@ -82,6 +85,7 @@ function mapBackendExam(be: BackendExamen): { exam: Exam; course: Course | null 
     courseId: be.cursoId,
     titulo: be.titulo,
     fecha: be.fecha ? new Date(be.fecha).toLocaleDateString('es-ES') : '—',
+    estado: be.estado || 'BORRADOR',
     preguntasCount: preguntas.length,
     puntajeTotal: preguntas.reduce((sum, q) => sum + q.puntajeMaximo, 0),
     entregasCount: 0,
@@ -119,9 +123,36 @@ export const ExamenDetalleView: React.FC = () => {
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [myCourses, setMyCourses] = useState<any[]>([]);
   const [targetCourseId, setTargetCourseId] = useState<string>('');
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'entregas' | 'analiticas'>('entregas');
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [printPrefs, setPrintPrefs] = useState<PrintPreferences | null>(null);
+
+  const handlePublishExam = async () => {
+    if (!exam) return;
+    if (exam.preguntasCount === 0) {
+      alert('El examen debe tener al menos una pregunta para poder publicarse.');
+      return;
+    }
+    setIsPublishing(true);
+    setPublishError(null);
+    try {
+      await fetchApi(`/api/v1/examenes/${exam.id}/estado`, {
+        method: 'PATCH',
+        body: JSON.stringify({ estado: 'PUBLICADO' }),
+      });
+      setExam({
+        ...exam,
+        estado: 'PUBLICADO',
+      });
+    } catch (err: any) {
+      console.error('Error al publicar examen:', err);
+      setPublishError(err?.message || 'No se pudo publicar el examen.');
+    } finally {
+      setIsPublishing(false);
+    }
+  };
 
   useEffect(() => {
     if (!params.id) return;
@@ -272,7 +303,24 @@ export const ExamenDetalleView: React.FC = () => {
                 {course.materia} - {course.anio}{course.division}
               </span>
             )}
-            <h1 className="text-2xl md:text-3xl font-black text-white mt-2">{exam.titulo}</h1>
+            <div className="flex flex-wrap items-center gap-3 mt-2">
+              <h1 className="text-2xl md:text-3xl font-black text-white">{exam.titulo}</h1>
+              {exam.estado === 'BORRADOR' && (
+                <span className="px-3 py-1 bg-amber-950/80 text-amber-300 border border-amber-800/50 rounded-full text-xs font-bold">
+                  🟡 Borrador
+                </span>
+              )}
+              {exam.estado === 'PUBLICADO' && (
+                <span className="px-3 py-1 bg-emerald-950/80 text-emerald-300 border border-emerald-800/50 rounded-full text-xs font-bold">
+                  🟢 Publicado
+                </span>
+              )}
+              {exam.estado === 'ARCHIVADO' && (
+                <span className="px-3 py-1 bg-slate-800 text-slate-400 border border-slate-700 rounded-full text-xs font-bold">
+                  ⚪ Archivado
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -302,15 +350,68 @@ export const ExamenDetalleView: React.FC = () => {
               <span>Ver preguntas</span>
             </button>
 
+            {exam.estado === 'BORRADOR' && (
+              <button
+                onClick={handlePublishExam}
+                disabled={isPublishing}
+                className="py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/30 transition-all flex items-center gap-2 disabled:opacity-50"
+              >
+                {isPublishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                <span>Publicar</span>
+              </button>
+            )}
+
             <button
-              onClick={() => router.push(`/entregas/nueva?examenId=${exam.id}`)}
-              className="py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2"
+              onClick={() => {
+                if (exam.estado === 'BORRADOR') {
+                  alert('Debes publicar el examen antes de poder cargar entregas.');
+                  return;
+                }
+                router.push(`/entregas/nueva?examenId=${exam.id}`);
+              }}
+              disabled={exam.estado === 'BORRADOR'}
+              className={`py-2.5 px-4 font-bold text-xs rounded-xl transition-all flex items-center gap-2 ${
+                exam.estado === 'BORRADOR'
+                  ? 'bg-slate-800/80 text-slate-500 border border-slate-700/50 cursor-not-allowed opacity-60'
+                  : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30'
+              }`}
+              title={exam.estado === 'BORRADOR' ? 'Publica el examen para habilitar entregas' : 'Cargar nueva entrega'}
             >
               <Upload className="w-4 h-4" />
               <span>Nueva entrega</span>
             </button>
           </div>
         </div>
+
+        {/* Banner de Modo Borrador */}
+        {exam.estado === 'BORRADOR' && (
+          <div className="bg-amber-950/30 border border-amber-800/50 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-xs font-bold text-amber-300">Examen en Modo Borrador</h4>
+                <p className="text-[11px] text-slate-300 mt-0.5">
+                  Este examen no recibirá entregas hasta que lo publiques. Podés revisar o editar consignas antes de oficializarlo.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handlePublishExam}
+              disabled={isPublishing}
+              className="py-2.5 px-5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 shrink-0 disabled:opacity-50"
+            >
+              {isPublishing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+              <span>Publicar Examen</span>
+            </button>
+          </div>
+        )}
+
+        {publishError && (
+          <div className="p-3 bg-rose-950/60 border border-rose-800 rounded-xl text-xs text-rose-300 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+            <span>{publishError}</span>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-slate-800/80">
           <div className="p-3 bg-slate-950/60 border border-slate-800/80 rounded-2xl flex items-center gap-3">
@@ -383,7 +484,7 @@ export const ExamenDetalleView: React.FC = () => {
               <FileText className="w-4 h-4 text-indigo-400" />
               Últimas entregas ({deliveries.length})
             </h2>
-            {deliveries.length > 0 && (
+            {deliveries.length > 0 && exam.estado !== 'BORRADOR' && (
               <button
                 onClick={() => router.push(`/entregas/nueva?examenId=${exam.id}`)}
                 className="text-xs font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
@@ -396,13 +497,28 @@ export const ExamenDetalleView: React.FC = () => {
 
           {deliveries.length === 0 ? (
             <div className="text-center py-8 space-y-3">
-              <p className="text-xs text-slate-500 italic">No se han registrado entregas para este examen aún.</p>
-              <button
-                onClick={() => router.push(`/entregas/nueva?examenId=${exam.id}`)}
-                className="py-2 px-4 bg-indigo-600 text-white rounded-xl text-xs font-bold"
-              >
-                Cargar primera entrega
-              </button>
+              <p className="text-xs text-slate-500 italic">
+                {exam.estado === 'BORRADOR'
+                  ? 'El examen está en borrador. No se pueden registrar entregas hasta que se publique.'
+                  : 'No se han registrado entregas para este examen aún.'}
+              </p>
+              {exam.estado === 'BORRADOR' ? (
+                <button
+                  onClick={handlePublishExam}
+                  disabled={isPublishing}
+                  className="py-2 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all inline-flex items-center gap-2 disabled:opacity-50"
+                >
+                  {isPublishing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                  <span>Publicar examen ahora</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => router.push(`/entregas/nueva?examenId=${exam.id}`)}
+                  className="py-2 px-4 bg-indigo-600 text-white rounded-xl text-xs font-bold"
+                >
+                  Cargar primera entrega
+                </button>
+              )}
             </div>
           ) : (
             <div className="space-y-3">

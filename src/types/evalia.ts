@@ -38,11 +38,14 @@ export interface Question {
   esEvaluacionVisual?: boolean;
 }
 
+export type EstadoExamen = 'BORRADOR' | 'PUBLICADO' | 'ARCHIVADO';
+
 export interface Exam {
   id: string;
   courseId: string;
   titulo: string;
   fecha: string;
+  estado?: EstadoExamen;
   preguntasCount: number;
   puntajeTotal: number;
   entregasCount: number;

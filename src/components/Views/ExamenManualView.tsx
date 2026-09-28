@@ -11,6 +11,8 @@ import {
   AlertTriangle,
   Loader2,
   CheckCircle2,
+  Send,
+  Sparkles,
   History,
   RotateCcw,
 } from 'lucide-react';
@@ -129,7 +131,7 @@ export const ExamenManualView: React.FC = () => {
   const puntajeTotal = preguntas.reduce((sum, q) => sum + (Number(q.puntajeMaximo) || 0), 0);
   const hasEmptyPoints = preguntas.some(q => q.puntajeMaximo === '' || q.puntajeMaximo === 0 || q.puntajeMaximo === undefined);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, estado: 'BORRADOR' | 'PUBLICADO' = 'BORRADOR') => {
     e.preventDefault();
     setErrorMsg(null);
     setIsSaving(true);
@@ -138,6 +140,7 @@ export const ExamenManualView: React.FC = () => {
       const payload = {
         titulo: titulo.trim(),
         fecha: fecha.trim(),
+        estado: estado,
         criteriosAdicionales: criteriosIA.trim(),
         puntajeTotal: puntajeTotal,
         preguntas: preguntas.map((q, idx) => ({
@@ -401,14 +404,25 @@ export const ExamenManualView: React.FC = () => {
         )}
 
         {/* Submit */}
-        <div className="flex items-center justify-end gap-3 pt-2">
+        <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
           <button
-            type="submit"
+            type="button"
+            onClick={(e) => handleSubmit(e, 'BORRADOR')}
             disabled={isSaving}
-            className="py-3 px-8 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2 disabled:opacity-50"
+            className="py-3 px-5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs rounded-xl transition-all flex items-center gap-2 disabled:opacity-50"
           >
-            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            <span>Guardar examen</span>
+            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 text-amber-400" />}
+            <span>Guardar como Borrador</span>
+          </button>
+          
+          <button
+            type="button"
+            onClick={(e) => handleSubmit(e, 'PUBLICADO')}
+            disabled={isSaving}
+            className="py-3 px-7 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2 disabled:opacity-50"
+          >
+            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            <span>Publicar Examen</span>
           </button>
         </div>
       </form>
