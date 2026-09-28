@@ -6,28 +6,13 @@ import { Users, FileText, Plus, ArrowLeft, ChevronRight, Edit, Trash2, Loader2, 
 import { fetchApi } from '@/src/lib/api';
 import { ReportExportDropdown } from '../Common/ReportExportDropdown';
 
-interface BackendExamen {
-  id: string;
-  titulo: string;
-  fecha: string;
-  preguntas: { puntajeMaximo: number }[];
-  _count?: { entregas: number };
-}
-
-interface BackendCurso {
-  id: string;
-  materia: string;
-  anio: number;
-  division: string;
-  anioLectivo: number;
-  examenes: BackendExamen[];
-  alumnos: { alumno: { id: string; nombre: string; apellido: string; legajo: string } }[];
-}
+import { EstadoExamen } from '@/src/types/evalia';
 
 interface BackendExamen {
   id: string;
   titulo: string;
   fecha: string;
+  estado?: EstadoExamen;
   preguntas: { puntajeMaximo: number }[];
   _count?: { entregas: number };
 }
@@ -263,7 +248,24 @@ export const CursoDetalleView: React.FC<CursoDetalleViewProps> = ({ courseId: pr
                 return (
                   <div key={exam.id} className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl hover:border-indigo-500/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="space-y-1">
-                      <h3 className="text-sm font-bold text-white">{exam.titulo}</h3>
+                      <div className="flex items-center gap-2.5">
+                        <h3 className="text-sm font-bold text-white">{exam.titulo}</h3>
+                        {exam.estado === 'BORRADOR' && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-950/80 text-amber-300 border border-amber-800/40">
+                            🟡 Borrador
+                          </span>
+                        )}
+                        {exam.estado === 'PUBLICADO' && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-800/40">
+                            🟢 Publicado
+                          </span>
+                        )}
+                        {exam.estado === 'ARCHIVADO' && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">
+                            ⚪ Archivado
+                          </span>
+                        )}
+                      </div>
                       <div className="flex flex-wrap items-center gap-4 text-[11px] text-slate-400">
                         <span>Fecha: {fechaStr}</span>
                         <span>&bull;</span>

@@ -14,6 +14,7 @@ import {
   Loader2,
   AlertCircle,
   AlertTriangle,
+  Send,
 } from 'lucide-react';
 
 interface BackendCreatedExam {
@@ -92,7 +93,7 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
     0
   );
 
-  const handleSave = async () => {
+  const handleSave = async (estado: 'BORRADOR' | 'PUBLICADO' = 'BORRADOR') => {
     if (!courseId) {
       setSaveError('No se pudo determinar el curso al que pertenece el examen.');
       return;
@@ -113,6 +114,7 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
       // Mapeo inverso de campos Frontend (consigna) -> Backend (enunciado)
       const payload = {
         titulo: titulo.trim(),
+        estado: estado,
         preguntas: preguntas.map((q) => ({
           enunciado: q.consigna.trim(),
           respuestaEsperada: q.respuestaEsperada.trim(),
@@ -348,24 +350,26 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
           </button>
         </div>
 
-        {/* Botón Guardar */}
-        <div className="flex justify-end pt-2">
+        {/* Botones de Acción */}
+        <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
           <button
-            onClick={handleSave}
+            type="button"
+            onClick={() => handleSave('BORRADOR')}
             disabled={isSaving}
-            className="py-3 px-8 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2 disabled:opacity-50"
+            className="py-3 px-5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs rounded-xl transition-all flex items-center gap-2 disabled:opacity-50"
           >
-            {isSaving ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin text-white" />
-                <span>Guardando examen...</span>
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4" />
-                <span>Guardar examen</span>
-              </>
-            )}
+            {isSaving ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Save className="w-4 h-4 text-amber-400" />}
+            <span>Guardar como Borrador</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleSave('PUBLICADO')}
+            disabled={isSaving}
+            className="py-3 px-7 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2 disabled:opacity-50"
+          >
+            {isSaving ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Send className="w-4 h-4" />}
+            <span>Publicar Examen</span>
           </button>
         </div>
       </div>

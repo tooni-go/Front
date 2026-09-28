@@ -2,8 +2,9 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Upload, Image as ImageIcon, FileText, Camera, Trash2, ArrowLeft, Send, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Upload, Image as ImageIcon, FileText, Camera, Trash2, ArrowLeft, Send, Loader2, AlertCircle, RefreshCw, AlertTriangle } from 'lucide-react';
 import { fetchApi, ApiError } from '../../lib/api';
+import { EstadoExamen } from '@/src/types/evalia';
 
 // Estos valores deben coincidir con MAX_UPLOAD_SIZE_MB y SUPPORTED_SUBMISSION_MIME_TYPES del backend (repo separado) — si se cambian de un lado, hay que avisar para cambiarlos del otro.
 const MAX_UPLOAD_SIZE_MB = 10;
@@ -27,6 +28,7 @@ interface ExamenBackendResponse {
   id: string;
   titulo: string;
   fecha: string;
+  estado?: EstadoExamen;
   cursoId: string;
   preguntas?: Array<{
     id: string;
@@ -267,6 +269,29 @@ export const NuevaEntregaView: React.FC = () => {
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Volver</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (examData.estado === 'BORRADOR') {
+    return (
+      <div className="max-w-md mx-auto py-12 text-center space-y-6 animate-in fade-in">
+        <div className="p-6 bg-amber-950/60 border border-amber-800/80 rounded-3xl space-y-4 shadow-2xl">
+          <AlertTriangle className="w-10 h-10 text-amber-400 mx-auto" />
+          <h2 className="text-base font-bold text-white">Examen en Modo Borrador</h2>
+          <p className="text-xs text-amber-200/90 leading-relaxed">
+            Este examen se encuentra en preparación. No se pueden cargar entregas hasta que el docente lo <strong>publique</strong> oficialmente.
+          </p>
+          <div className="flex justify-center gap-3 pt-2">
+            <button
+              onClick={() => router.push(`/examenes/${examData.id}`)}
+              className="py-2.5 px-5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-lg shadow-indigo-600/30"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Ir al detalle del examen</span>
             </button>
           </div>
         </div>
