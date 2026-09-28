@@ -1,4 +1,16 @@
-Posibles mejoras de la app EvalIA (Pendientes):
+Posibles mejoras de la app EvalIA (Backlog y Pendientes):
+
+================================================================================
+NOTAS Y HALLAZGOS DE LA DEMO (27/09/2026):
+- [PRIORIDAD ALTA] Aislamiento de datos: Al loguearse con cuentas distintas (ej. cuenta personal / hotmail), se observan los cursos de otros profesores. Requiere aislamiento urgente por JWT/ID de docente.
+- [PRIORIDAD ALTA] Eliminación de Cursos: La acción de borrar cursos no se encuentra implementada en la interfaz ni conectada al backend con confirmación.
+- [UX / Auth] Saludo inicial: Al entrar figura "Bienvenido nuevamente, Profesor" o nombres default en lugar de sincronizar con el nombre real de la cuenta o pedir completar perfil.
+- [Importador] Parser de Excel/CSV: Falla si el archivo tiene filas de encabezado previas (títulos institucionales, metadata) y no encuentra las columnas en la primera fila.
+- [Validación] Creación de Exámenes: El selector de fecha permite seleccionar fechas pasadas. Debe restringirse a partir de la fecha actual.
+- [Motor IA / Backend] Reintentos y Timeouts: Implementar retry exponencial ante errores 503/429 y ajustar timeout global a 30s-45s para análisis de PDFs extensos.
+- [Motor IA / Backend] Compatibilidad de PDFs: Soporte para modelos de OpenRouter que no admiten data-url directo (GPT-4o Mini) y definir 'anthropic/claude-3.5-sonnet' como fallback.
+- [UX / Corrección IA] Control y Estados: Agregar botón 'Reintentar Corrección con IA' y banners claros en estados PROCESANDO / REQUIERE_REVISION (evitando ceros automáticos por cortes de red).
+================================================================================
 
 1. GENERADOR DE TEMAS Y VARIANTES ANTI-COPIA CON IA
 --------------------------------------------------------------------------------
@@ -43,45 +55,53 @@ Posibles mejoras de la app EvalIA (Pendientes):
   del examen corregido junto con el desglose de puntajes y las observaciones 
   cualitativas de la corrección.
 --------------------------------------------------------------------------------
-5. AISLAMIENTO DE CURSOS POR DOCENTE Y MULTI-USUARIO (DATA ISOLATION)
+5. AISLAMIENTO DE CURSOS POR DOCENTE Y MULTI-USUARIO (DATA ISOLATION) [CRÍTICO]
 --------------------------------------------------------------------------------
+- Caso de uso real detectado:
+  Un docente ingresa con su cuenta (ej: Hotmail/Google) y visualiza los cursos, 
+  alumnos y exámenes creados por otro docente, vulnerando la privacidad de datos.
 - Descripción:
-  Garantizar la privacidad y separación de datos entre diferentes profesores, 
+  Garantizar la privacidad y estricta separación de datos entre diferentes profesores, 
   asegurando que cada docente solo pueda ver, editar y calificar sus propios 
   cursos, alumnos y exámenes.
 
-- Tareas en el Backend (NestJS):
+- Tareas en el Backend (NestJS / Prisma):
   1. En `CursosService`, actualizar `findMany` para filtrar estrictamente:
      `prisma.curso.findMany({ where: { profesorId: usuarioLogueado.id } })`.
   2. En `POST /cursos`, asociar automáticamente el curso al ID del profesor 
-     extraído del JWT de la sesión.
-  3. Proteger las rutas para que un profesor no pueda acceder a un curso 
-     que pertenezca a otro docente (Control de Acceso / Guards).
+     extraído del JWT de la sesión activa.
+  3. Proteger las rutas y servicios con Guards para impedir que un profesor acceda 
+     o modifique por URL/ID un curso que pertenezca a otro docente.
 
 - Tareas en el Frontend (Next.js):
-  1. Enviar el JWT / `profesorId` en el header de cada petición a la API.
+  1. Enviar el JWT / token de sesión en el header de cada petición a la API.
   2. Limpiar por completo el estado global (Context) y la memoria local 
      al hacer Logout para que el siguiente usuario no vea datos residuales.
 --------------------------------------------------------------------------------
-6. SINCRONIZACIÓN DE LOGIN Y ACTUALIZACIÓN DEL PERFIL DOCENTE (/profesor/me)
+6. SINCRONIZACIÓN DE LOGIN, SALUDO Y PERFIL DOCENTE (/profesor/me)
 --------------------------------------------------------------------------------
+- Caso de uso real detectado:
+  Al iniciar sesión, el saludo muestra "Bienvenido nuevamente, Profesor" o valores 
+  por defecto en lugar del nombre real o de guiar al usuario a completar su perfil.
 - Descripción:
   Conectar de forma completa el flujo de inicio de sesión con la base de datos 
   y habilitar la edición persistente del perfil del profesor.
 
 - Funcionamiento esperado:
-  1. Al iniciar sesión (sea con Google o con Email), el backend debe verificar 
-     si el profesor existe en la base de datos SQLite; si no existe, debe 
-     crearlo automáticamente (registro automático / Upsert).
-  2. El backend devuelve un token JWT con el `id` y `email` del profesor.
-  3. El endpoint `PUT /api/v1/profesor/me` recibe el token en el header 
-     `Authorization: Bearer <token>`, actualiza el Nombre, Apellido y 
-     Departamento del docente en la base de datos y devuelve los datos guardados.
-  4. El frontend actualiza la interfaz y el saludo del usuario en tiempo real 
-     sin necesidad de recargar la página.
+  1. Al iniciar sesión (con Google o Email), el backend debe verificar si el 
+     profesor existe en PostgreSQL; si no existe, debe crearlo automáticamente 
+     (registro automático / Upsert).
+  2. El backend devuelve un token JWT con el `id`, `email` y `nombre` del profesor.
+  3. El endpoint `PUT /api/v1/profesor/me` recibe el token en `Authorization: Bearer <token>`, 
+     actualiza Nombre, Apellido y Departamento del docente y devuelve los datos actualizados.
+  4. El frontend sincroniza el AuthContext y el saludo del Dashboard ("Bienvenido, Juan Pérez") 
+     en tiempo real tras el login o tras actualizar el perfil.
 --------------------------------------------------------------------------------
-7. EDICIÓN Y ELIMINACIÓN DE CURSOS (CRUD COMPLETO CON CONFIRMACIÓN)
+7. EDICIÓN Y ELIMINACIÓN DE CURSOS (CRUD COMPLETO CON CONFIRMACIÓN) [CRÍTICO]
 --------------------------------------------------------------------------------
+- Caso de uso real detectado:
+  Actualmente no existe la posibilidad de borrar cursos que fueron creados por error 
+  o de prueba, ni de editar sus datos principales.
 - Descripción:
   Permitir al docente modificar los datos de una división existente o eliminar 
   un curso que ya no utilice.
@@ -92,12 +112,12 @@ Posibles mejoras de la app EvalIA (Pendientes):
   2. Agregar un botón de "Eliminar Curso" con un modal de confirmación 
      destructiva (alerta roja que advierta: "Esta acción eliminará también 
      los alumnos matriculados y exámenes asociados").
-  3. Redireccionar al listado de cursos tras la eliminación con feedback visual.
+  3. Redireccionar al listado de cursos tras la eliminación con feedback visual (toast de éxito).
 
 - Backend (NestJS / Prisma):
-  1. Endpoint `PUT /api/v1/cursos/:id`: Actualizar datos del curso.
+  1. Endpoint `PUT /api/v1/cursos/:id`: Actualizar datos del curso (validando pertenencia al docente).
   2. Endpoint `DELETE /api/v1/cursos/:id`: Eliminar el curso y aplicar borrado 
-     en cascada (o borrado lógico) de las relaciones en SQLite.
+     en cascada (o borrado lógico) de alumnos y exámenes en la base de datos.
 --------------------------------------------------------------------------------
 8. SISTEMA DE LOGGING ESTRUCTURADO Y AUDITORÍA (tslog / typescript-logging)
 --------------------------------------------------------------------------------
@@ -107,7 +127,7 @@ Posibles mejoras de la app EvalIA (Pendientes):
 - Descripción:
   Implementar un servicio centralizado de logging tipado en TypeScript para 
   capturar y persistir todos los eventos, advertencias y errores del sistema 
-  en archivos locales.
+  en archivos locales o base de datos.
 
 - Alcance Backend (NestJS):
   1. Integrar `tslog` como logger global de la aplicación.
@@ -144,23 +164,22 @@ Posibles mejoras de la app EvalIA (Pendientes):
   4. Rotación periódica de API Keys externas (Gemini / OpenRouter / Google OAuth) 
      en las consolas de proveedores.
 --------------------------------------------------------------------------------
-10. MANEJO RESILIENTE DE ERRORES Y DIAGNÓSTICO DE IA (GEMINI / OPENROUTER)
+10. RESILIENCIA, REINTENTOS Y DIAGNÓSTICO DE IA (GEMINI / OPENROUTER)
 --------------------------------------------------------------------------------
 - Descripción:
-  Mejorar la detección de fallos y el feedback visual cuando los servicios 
-  de IA no puedan generar el examen o extraer el texto de un documento (PDF/DOCX).
+  Mejorar la tolerancia a fallos temporales de proveedores LLM, evitando que micro-cortes, 
+  saturación de API (503) o rate limits (429) arruinen la experiencia docente.
 
 - Tareas en el Backend (NestJS):
-  1. Validación proactiva de credenciales: Verificar la validez de `GEMINI_API_KEY` 
-     y `OPENROUTER_API_KEY` al iniciar el servicio para alertar si faltan en el `.env`.
-  2. Mensajes de error específicos: En lugar de un error genérico, devolver 
-     la causa real del fallo (ej: "Límite de cuota excedido (Rate Limit 429)", 
-     "API Key no configurada", "El archivo PDF está protegido o ilegible").
-  3. Endpoint de Health Check (`GET /api/v1/ai/status`): Endpoint liviano 
-     que comprueba la conectividad con Gemini y OpenRouter y reporta cuál 
-     proveedor está activo.
-  4. Optimización del extractor de documentos: Mejorar el procesamiento de PDFs 
-     pesados o escaneados con OCR previo para evitar timeouts.
+  1. Política de reintentos (Exponential Backoff): Si la llamada a Gemini, Claude 
+     u OpenRouter falla con error temporal 503 (alta demanda) o 429 (rate limit), 
+     reintentar automáticamente 1 o 2 veces tras 1.5 a 2 segundos antes de fallar.
+  2. Timeout global ajustado: Extender el timeout de llamadas de IA a un rango seguro 
+     (30s a 45s) para permitir generaciones extensas y análisis de PDFs pesados sin cortes.
+  3. Validación proactiva de credenciales: Verificar la validez de `GEMINI_API_KEY` 
+     y `OPENROUTER_API_KEY` al iniciar el servicio.
+  4. Endpoint de Health Check (`GET /api/v1/ai/status`): Endpoint liviano 
+     que comprueba la conectividad y reporta qué proveedor/modelo está operativo.
 
 - Tareas en el Frontend (Next.js):
   1. Alertas descriptivas: Mostrar al usuario un mensaje claro con sugerencias 
@@ -188,17 +207,7 @@ Posibles mejoras de la app EvalIA (Pendientes):
   Una vez que el profesor aprueba y publica las notas, las identidades de los 
   alumnos se revelan automáticamente.
 --------------------------------------------------------------------------------
-13. GUARDADO AUTOMÁTICO EN LOCAL (AUTOSAVE / RESILIENCIA ANTE CORTES DE RED)
---------------------------------------------------------------------------------
-- Descripción:
-  Guardar cada cambio de consigna, edición de notas o corrección en el almacenamiento 
-  local del navegador (IndexedDB/LocalStorage) en tiempo real.
-- Impacto:
-  Si al profesor se le corta internet, se le apaga la laptop o cierra la pestaña 
-  por error, al volver a abrir EvalIA no pierde nada de su trabajo y el sistema 
-  se sincroniza solo con el servidor.
---------------------------------------------------------------------------------
-14. HISTORIAL DE VERSIONES Y AUDITORÍA DE CAMBIOS EN EL EXAMEN
+13. HISTORIAL DE VERSIONES Y AUDITORÍA DE CAMBIOS EN EL EXAMEN
 --------------------------------------------------------------------------------
 - Descripción:
   Permite al docente ver el historial de cambios de un examen (ej: "Ayer a las 18:00 
@@ -206,4 +215,74 @@ Posibles mejoras de la app EvalIA (Pendientes):
 - Funcionamiento:
   Permite restaurar versiones anteriores si un cambio de la IA o una edición 
   manual no convence al profesor.
+--------------------------------------------------------------------------------
+14. PARSER RESILIENTE Y DETECCIÓN INTELIGENTE DE COLUMNAS EN IMPORTACIÓN (EXCEL/CSV)
+--------------------------------------------------------------------------------
+- Caso de uso real detectado:
+  Los profesores importan planillas de Excel que contienen títulos institucionales, 
+  logos, fechas o filas vacías en las primeras filas antes de la tabla de datos, 
+  haciendo que el importador falle al no encontrar las columnas requeridas en la fila 1.
+- Descripción:
+  Hacer que el importador masivo de alumnos sea flexible ante diferentes estructuras 
+  de archivos Excel (.xlsx/.xls) y CSV.
+
+- Mejoras a implementar:
+  1. Escaneo inteligente de encabezados: Buscar automáticamente en las primeras 10 
+     filas la fila que contenga nombres de columnas compatibles (nombre, apellido, email, legajo/dni).
+  2. Mapeador interactivo de columnas (Fallback): Si la detección automática tiene 
+     dudas, mostrar al docente un paso de previsualización donde pueda seleccionar 
+     manualmente qué columna del Excel corresponde a cada campo requerido.
+  3. Validación e ignorado de filas no válidas: Omitir filas de totales, firmas o comentarios 
+     al final del archivo sin abortar la importación completa.
+--------------------------------------------------------------------------------
+15. RESTRICCIÓN Y VALIDACIÓN DE FECHA MÍNIMA EN CREACIÓN DE EXÁMENES
+--------------------------------------------------------------------------------
+- Caso de uso real detectado:
+  En el formulario de creación de exámenes (manual o con IA), el selector de fecha 
+  permite elegir fechas en el pasado por error.
+- Descripción:
+  Asegurar la consistencia temporal impidiendo que se programen exámenes con fechas pasadas.
+
+- Tareas Frontend (Next.js):
+  1. Configurar la propiedad `min={today}` en los inputs `<input type="date">` 
+     en las vistas de creación de examen (Manual e IA).
+  2. Agregar validación en el formulario para alertar si se ingresa una fecha inválida 
+     antes del envío.
+
+- Tareas Backend (NestJS):
+  1. Validar en el DTO / servicio de creación de examen que `fecha >= hoy` (a menos 
+     que sea un registro histórico explícito).
+--------------------------------------------------------------------------------
+16. ESTANDARIZACIÓN Y COMPATIBILIDAD DE PROCESAMIENTO DE PDFs/IMÁGENES EN IA (BACKEND)
+--------------------------------------------------------------------------------
+- Descripción:
+  Asegurar que cualquier modelo configurado en OpenRouter o Gemini pueda procesar 
+  documentos PDF de alumnos sin fallos de compatibilidad en el formato del payload.
+
+- Mejoras a implementar:
+  1. Compatibilidad para modelos sin soporte data-url PDF: Para modelos como `gpt-4o-mini` 
+     en OpenRouter que no admiten PDFs crudos vía base64 data-url, implementar la 
+     conversión previa de cada página a imagen (renderizado png/jpeg) o extracción 
+     directa de texto antes de estructurar el prompt.
+  2. Modelo de respaldo predeterminado para PDFs: Establecer `anthropic/claude-3.5-sonnet` 
+     como el modelo por defecto recomendado cuando la entrada sea un archivo PDF multimodal.
+--------------------------------------------------------------------------------
+17. EXPERIENCIA DE USUARIO Y CONTROL DOCENTE EN CORRECCIÓN CON IA (FRONTEND)
+--------------------------------------------------------------------------------
+- Descripción:
+  Proporcionar control total al docente durante la corrección asistida por IA, 
+  ofreciendo acciones claras de reintento y evitando estados confusos ante caídas de red.
+
+- Mejoras a implementar:
+  1. Botón "Reintentar Corrección con IA": Permitir al docente forzar una nueva 
+     evaluación automática de una entrega con un solo clic si el intento previo 
+     falló por micro-cortes o si se cambió el modelo activo.
+  2. Manejo de estados visuales claros:
+     - Estado "PROCESANDO": Mostrar un indicador/spinner visible y dinámico 
+       ("Analizando y corrigiendo examen con IA...").
+     - Estado "REQUIERE_REVISION" por fallo de red/timeout: Mostrar un banner de 
+       advertencia contextual ("No se pudo conectar con el servicio de IA. Puedes 
+       calificar manualmente o reintentar la corrección"), evitando terminantemente 
+       asignar 0 puntos por defecto o mostrar "No se detectó texto" cuando la causa 
+       real fue un problema de conexión.
 --------------------------------------------------------------------------------
