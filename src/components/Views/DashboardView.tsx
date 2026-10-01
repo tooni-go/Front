@@ -3,14 +3,69 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
-import { Plus, BookOpen, Users, FileText, ArrowRight, Sparkles } from 'lucide-react';
+import { Plus, BookOpen, Users, FileText, ArrowRight, Sparkles, Loader2, AlertTriangle } from 'lucide-react';
 import { fetchApi } from '@/src/lib/api';
+
+type AiStatus = 'loading' | 'active' | 'fallback_only' | 'error';
+
+const AiStatusChip: React.FC<{ status: AiStatus }> = ({ status }) => {
+  if (status === 'loading') {
+    return (
+      <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800/60 border border-slate-700/50 rounded-full text-slate-400 text-xs font-semibold animate-pulse">
+        <Loader2 className="w-3 h-3 animate-spin" />
+        <span>Verificando IA...</span>
+      </div>
+    );
+  }
+
+  if (status === 'active') {
+    return (
+      <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-emerald-300 text-xs font-semibold">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+        <span>IA Activa</span>
+      </div>
+    );
+  }
+
+  if (status === 'fallback_only') {
+    return (
+      <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/30 rounded-full text-amber-300 text-xs font-semibold">
+        <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
+        <span>Solo fallback activo</span>
+      </div>
+    );
+  }
+
+  // status === 'error'
+  return (
+    <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-500/10 border border-rose-500/30 rounded-full text-rose-300 text-xs font-semibold">
+      <span className="w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0" />
+      <span>Servicio de IA no disponible</span>
+    </div>
+  );
+};
 
 export const DashboardView: React.FC = () => {
   const router = useRouter();
   const { user } = useAuth();
 
   const [courses, setCourses] = useState<any[]>([]);
+  const [aiStatus, setAiStatus] = useState<AiStatus>('loading');
+
+  useEffect(() => {
+    const checkAiStatus = async () => {
+      try {
+        const data = await fetchApi<{ geminiPrincipal: { configurado: boolean } }>(
+          '/api/v1/ai/model',
+          { cache: 'no-store' }
+        );
+        setAiStatus(data.geminiPrincipal.configurado ? 'active' : 'fallback_only');
+      } catch {
+        setAiStatus('error');
+      }
+    };
+    checkAiStatus();
+  }, []);
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -31,9 +86,15 @@ export const DashboardView: React.FC = () => {
       {/* Welcome Banner */}
       <div className="bg-gradient-to-r from-indigo-900/40 via-slate-900 to-slate-900 border border-indigo-500/20 rounded-3xl p-6 md:p-8 shadow-xl relative overflow-hidden">
         <div className="max-w-2xl relative z-10 space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-500/10 border border-indigo-500/30 rounded-full text-indigo-300 text-xs font-semibold">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-            Panel Principal EvalIA
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Chip de presentación (existente, sin cambios) */}
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-500/10 border border-indigo-500/30 rounded-full text-indigo-300 text-xs font-semibold">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+              Panel Principal EvalIA
+            </div>
+
+            {/* Chip de estado de IA (nuevo) */}
+            <AiStatusChip status={aiStatus} />
           </div>
 
           <h1 className="text-2xl md:text-3xl font-black text-white">
