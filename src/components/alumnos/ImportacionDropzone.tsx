@@ -45,6 +45,7 @@ export const ImportacionDropzone: React.FC<ImportacionDropzoneProps> = ({ onData
 
     if (isExcel) {
       try {
+        // @ts-ignore
         const xlsx = await import('xlsx');
         const buffer = await file.arrayBuffer();
         const workbook = xlsx.read(buffer, { type: 'array' });

@@ -13,6 +13,7 @@ import {
   Award,
   Loader2,
   AlertCircle,
+  AlertTriangle,
   RefreshCw,
   FileText,
   ExternalLink,
@@ -39,11 +40,50 @@ interface EntregaCorreccionDraft {
   evaluatedQuestions: UiEvaluatedQuestion[];
 }
 
+const formatEstado = (estado?: string) => {
+  switch (estado) {
+    case 'PENDIENTE_APROBACION':
+      return {
+        label: 'Pendiente de Aprobación',
+        color: 'text-amber-300 bg-amber-950/60 border-amber-800/60',
+      };
+    case 'REQUIERE_REVISION':
+      return {
+        label: 'Requiere Revisión',
+        color: 'text-rose-300 bg-rose-950/60 border-rose-800/60',
+      };
+    case 'PUBLICADO':
+      return {
+        label: 'Publicado',
+        color: 'text-emerald-300 bg-emerald-950/60 border-emerald-800/60',
+      };
+    case 'PROCESANDO':
+      return {
+        label: 'Procesando...',
+        color: 'text-sky-300 bg-sky-950/60 border-sky-800/60',
+      };
+    case 'PENDIENTE':
+      return {
+        label: 'Pendiente',
+        color: 'text-slate-300 bg-slate-800/60 border-slate-700/60',
+      };
+    default:
+      return {
+        label: estado ? estado.replace(/_/g, ' ') : '—',
+        color: 'text-indigo-300 bg-indigo-950/60 border-indigo-800/60',
+      };
+  }
+};
+
 export const EntregaCorreccionIaView: React.FC = () => {
   const params = useParams<{ id: string }>();
   const router = useRouter();
 
   const [entrega, setEntrega] = useState<any | null>(null);
+  const [entregaEstado, setEntregaEstado] = useState<string>('');
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [retryError, setRetryError] = useState<string | null>(null);
+  const [showAiFailBanner, setShowAiFailBanner] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [isApproving, setIsApproving] = useState(false);
@@ -97,6 +137,7 @@ export const EntregaCorreccionIaView: React.FC = () => {
     try {
       const data = await fetchApi<any>(`/api/v1/entregas/${params.id}`);
       setEntrega(data);
+      setEntregaEstado(data.estado ?? '');
 
       // Parse feedbackJSON si viene como string JSON o como objeto
       let feedbackObj: any = {};
@@ -141,7 +182,10 @@ export const EntregaCorreccionIaView: React.FC = () => {
             textoDetectado: fb?.textoDetectado || '',
             comentarioIA: fb?.observaciones || fb?.comentarioIA || '',
             puntajeIA,
-            puntajeDocente: puntajeIA,
+            puntajeDocente:
+              data.estado === 'REQUIERE_REVISION' && feedbackPreguntas.length === 0
+                ? q.puntajeMaximo ?? 10
+                : puntajeIA,
             puntajeMaximo: typeof q.puntajeMaximo === 'number' ? q.puntajeMaximo : 10,
           };
         });
@@ -297,6 +341,25 @@ export const EntregaCorreccionIaView: React.FC = () => {
     }
   };
 
+  const handleRetryAiCorrection = async () => {
+    if (isRetrying) return;
+    setIsRetrying(true);
+    setRetryError(null);
+    try {
+      await fetchApi(`/api/v1/entregas/${params.id}/reintentar-correccion`, {
+        method: 'POST',
+      });
+      router.push(`/entregas/${params.id}/procesando`);
+    } catch (err: any) {
+      const msg =
+        err instanceof ApiError
+          ? err.message
+          : err?.message || 'Error al iniciar el reintento de corrección.';
+      setRetryError(msg);
+      setIsRetrying(false);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -354,6 +417,60 @@ export const EntregaCorreccionIaView: React.FC = () => {
         </div>
       )}
 
+      {/* Banner de advertencia si la corrección automática por IA falló */}
+      {entregaEstado === 'REQUIERE_REVISION' && showAiFailBanner && (
+        <div className="p-5 bg-amber-950/70 border border-amber-800/60 rounded-3xl space-y-4 animate-in fade-in duration-300">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-amber-200">
+                No se pudo completar la corrección automática con IA
+              </h3>
+              <p className="text-xs text-amber-300/80 leading-relaxed">
+                El servicio de inteligencia artificial no estuvo disponible durante el
+                procesamiento de esta entrega (error de red, timeout o rate limit).
+                Los puntajes mostrados son valores de referencia y{' '}
+                <strong>no reflejan la calificación real del alumno</strong>. Podés
+                calificar manualmente o reintentar la corrección automática.
+              </p>
+            </div>
+          </div>
+
+          {retryError && (
+            <div className="flex items-center gap-2 text-rose-300 text-xs bg-rose-950/60 border border-rose-800/50 rounded-xl px-3 py-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{retryError}</span>
+            </div>
+          )}
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleRetryAiCorrection}
+              disabled={isRetrying}
+              className="py-2 px-4 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-lg shadow-amber-600/20 transition-all flex items-center gap-2"
+            >
+              {isRetrying ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Iniciando reintento...</span>
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Reintentar corrección con IA</span>
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => setShowAiFailBanner(false)}
+              className="py-2 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition-colors"
+            >
+              Calificar manualmente
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Error banner si falló la aprobación */}
       {approveError && (
         <div className="p-4 bg-rose-950/70 border border-rose-800/80 rounded-2xl flex items-center gap-3 text-rose-300 text-xs">
@@ -379,6 +496,15 @@ export const EntregaCorreccionIaView: React.FC = () => {
                   : 'bg-rose-950 text-rose-300 border-rose-800/40'
               }`}>
                 Confianza: {entrega.correccion.nivelConfianza}
+              </span>
+            )}
+            {entrega.estado && (
+              <span
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                  formatEstado(entrega.estado).color
+                }`}
+              >
+                {formatEstado(entrega.estado).label}
               </span>
             )}
           </div>
@@ -572,7 +698,10 @@ export const EntregaCorreccionIaView: React.FC = () => {
                   Puntaje Sugerido IA
                 </p>
                 <p className="text-base font-black text-indigo-300 mt-1">
-                  {currentQ.puntajeIA} / {currentQ.puntajeMaximo} pts
+                  {entregaEstado === 'REQUIERE_REVISION' && !entrega.correccion?.feedbackJSON
+                    ? '—'
+                    : `${currentQ.puntajeIA} / ${currentQ.puntajeMaximo} pts`
+                  }
                 </p>
               </div>
 
@@ -607,7 +736,11 @@ export const EntregaCorreccionIaView: React.FC = () => {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
               <div className="p-2.5 bg-slate-950/60 border border-slate-800/80 rounded-xl">
                 <p className="text-[10px] text-slate-500 uppercase font-semibold">Nota IA</p>
-                <p className="text-sm font-black text-indigo-300">{entrega.correccion?.notaIA ?? 0} pts</p>
+                <p className="text-sm font-black text-indigo-300">
+                  {entregaEstado === 'REQUIERE_REVISION' && !entrega.correccion?.feedbackJSON
+                    ? '—'
+                    : `${entrega.correccion?.notaIA ?? 0} pts`}
+                </p>
               </div>
 
               <div className="p-2.5 bg-emerald-950/40 border border-emerald-800/40 rounded-xl">
@@ -617,12 +750,25 @@ export const EntregaCorreccionIaView: React.FC = () => {
 
               <div className="p-2.5 bg-slate-950/60 border border-slate-800/80 rounded-xl">
                 <p className="text-[10px] text-slate-500 uppercase font-semibold">Confianza</p>
-                <p className="text-xs font-bold text-slate-300">{entrega.correccion?.nivelConfianza || 'MEDIO'}</p>
+                <p className="text-xs font-bold text-slate-300">
+                  {entregaEstado === 'REQUIERE_REVISION' && !entrega.correccion?.feedbackJSON
+                    ? '—'
+                    : (entrega.correccion?.nivelConfianza || 'MEDIO')}
+                </p>
               </div>
 
-              <div className="p-2.5 bg-slate-950/60 border border-slate-800/80 rounded-xl">
+              <div className="p-2.5 bg-slate-950/60 border border-slate-800/80 rounded-xl flex flex-col justify-between items-center">
                 <p className="text-[10px] text-slate-500 uppercase font-semibold">Estado</p>
-                <p className="text-[11px] font-bold text-indigo-300">{entrega.estado || 'PENDIENTE_APROBACION'}</p>
+                {(() => {
+                  const est = formatEstado(entrega.estado);
+                  return (
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border text-center leading-snug mt-1 ${est.color}`}
+                    >
+                      {est.label}
+                    </span>
+                  );
+                })()}
               </div>
             </div>
           </div>

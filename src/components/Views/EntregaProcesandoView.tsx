@@ -19,6 +19,7 @@ export const EntregaProcesandoView: React.FC = () => {
     { title: 'Detectando texto con OCR...', icon: <FileSearch className="w-5 h-5" /> },
     { title: 'Comparando respuestas con clave de corrección...', icon: <Cpu className="w-5 h-5" /> },
     { title: 'Generando sugerencia de puntuación con IA...', icon: <CheckSquare className="w-5 h-5" /> },
+    { title: 'Verificando resultado y calculando nota sugerida...', icon: <CheckCircle2 className="w-5 h-5" /> },
   ];
 
   // Decorative steps animation
@@ -118,7 +119,8 @@ export const EntregaProcesandoView: React.FC = () => {
       <div className="space-y-2">
         <h1 className="text-2xl font-black text-white">PROCESANDO ENTREGA</h1>
         <p className="text-xs text-indigo-300">
-          Evaluando examen escrito con el motor de IA...
+          Analizando y corrigiendo examen con IA...{' '}
+          <span className="text-slate-500">({elapsedSeconds}s)</span>
         </p>
       </div>
 
