@@ -53,26 +53,7 @@ export const ImportacionDropzone: React.FC<ImportacionDropzoneProps> = ({ onData
         const worksheet = workbook.Sheets[firstSheetName];
         const jsonData = xlsx.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
         
-        if (jsonData.length < 2) {
-          alert('El archivo Excel debe tener al menos una fila de encabezados y una de datos.');
-          return;
-        }
-
-        const headers = jsonData[0].map(h => String(h).trim().toLowerCase());
-        const parsedData = jsonData.slice(1).map(row => {
-          const rowData: any = {};
-          headers.forEach((h, i) => {
-            rowData[h] = row[i] !== undefined ? String(row[i]).trim() : '';
-          });
-          return {
-            nombre: rowData['nombre'] || rowData['name'] || '',
-            apellido: rowData['apellido'] || rowData['last_name'] || rowData['lastname'] || '',
-            legajo: rowData['legajo'] || rowData['dni'] || '',
-            email: rowData['email'] || rowData['correo'] || ''
-          };
-        }).filter(r => r.nombre || r.apellido || r.legajo);
-
-        onDataParsed(parsedData);
+        processDataMatrix(jsonData);
       } catch (error) {
         console.error("Error leyendo excel:", error);
         alert('Hubo un error al leer el archivo Excel.');
@@ -91,26 +72,63 @@ export const ImportacionDropzone: React.FC<ImportacionDropzoneProps> = ({ onData
 
   const parseCSV = (text: string) => {
     const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
-    if (lines.length < 2) {
-      alert('El archivo CSV debe tener al menos una fila de encabezados y una de datos.');
+    const matrix = lines.map(line => line.split(',').map(v => v.trim()));
+    processDataMatrix(matrix);
+  };
+
+  const processDataMatrix = (matrix: any[][]) => {
+    const keywords = ['nombre', 'name', 'apellido', 'last_name', 'lastname', 'email', 'correo', 'legajo', 'dni'];
+    let bestRowIndex = -1;
+    let maxMatches = 0;
+
+    for (let i = 0; i < Math.min(10, matrix.length); i++) {
+      const row = matrix[i];
+      if (!Array.isArray(row)) continue;
+      
+      let matchCount = 0;
+      for (const cell of row) {
+        const val = String(cell || '').trim().toLowerCase();
+        if (keywords.includes(val)) {
+          matchCount++;
+        }
+      }
+      
+      if (matchCount > maxMatches) {
+        maxMatches = matchCount;
+        bestRowIndex = i;
+      }
+    }
+    
+    if (bestRowIndex === -1) {
+      alert("No se pudo detectar automáticamente la estructura del archivo.\nPor favor, asegúrate de que:\n- Los encabezados (nombre, apellido, legajo, email) estén en las primeras 10 filas.\n- No haya celdas combinadas o formatos complejos que rompan la tabla.\n\nCorrige el archivo y vuelve a intentarlo.");
       return;
     }
 
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const headers = matrix[bestRowIndex].map(h => String(h || '').trim().toLowerCase());
     
-    const parsedData = lines.slice(1).map(line => {
-      const values = line.split(',').map(v => v.trim());
-      const row: any = {};
+    const parsedData = matrix.slice(bestRowIndex + 1).map(row => {
+      const rowData: any = {};
       headers.forEach((h, i) => {
-        row[h] = values[i] || '';
+        rowData[h] = row[i] !== undefined ? String(row[i]).trim() : '';
       });
       return {
-        nombre: row['nombre'] || row['name'] || '',
-        apellido: row['apellido'] || row['last_name'] || row['lastname'] || '',
-        legajo: row['legajo'] || row['dni'] || '',
-        email: row['email'] || row['correo'] || ''
+        nombre: rowData['nombre'] || rowData['name'] || '',
+        apellido: rowData['apellido'] || rowData['last_name'] || rowData['lastname'] || '',
+        legajo: rowData['legajo'] || rowData['dni'] || '',
+        email: rowData['email'] || rowData['correo'] || ''
       };
-    }).filter(r => r.nombre || r.apellido || r.legajo);
+    }).filter(r => {
+      const n = String(r.nombre).toLowerCase();
+      const a = String(r.apellido).toLowerCase();
+      if (n.includes('total') || a.includes('total')) return false;
+      if (n.includes('firma') || a.includes('firma')) return false;
+      return r.nombre || r.apellido || r.legajo;
+    });
+
+    if (parsedData.length === 0) {
+      alert('No se encontraron datos válidos después de los encabezados.');
+      return;
+    }
 
     onDataParsed(parsedData);
   };
