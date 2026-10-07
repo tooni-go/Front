@@ -44,7 +44,7 @@ export const Navbar: React.FC = () => {
               )}
             </div>
             <span className="hidden sm:inline-block font-medium text-slate-100">
-              {user?.name || 'Prof. Juan Pérez'}
+              {user?.name || 'Profesor'}
             </span>
             <ChevronDown className="w-4 h-4 text-slate-400" />
           </button>

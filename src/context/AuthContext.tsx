@@ -1,9 +1,10 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useSession, signIn, signOut as nextAuthSignOut } from 'next-auth/react';
 import { User } from '../types/evalia';
 import { fetchApi } from '../lib/api';
+import { clearEvaliaStorage } from '../lib/storage';
 
 interface AuthContextType {
   user: User | null;
@@ -12,6 +13,7 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<void>;
   loginWithCredentials: (email: string) => Promise<void>;
   logout: () => void;
+  refreshProfile: () => Promise<void>;
   updateProfile?: (data: any) => void;
   login?: (email: string, pass: string) => Promise<void>;
   signup?: (name: string, email: string, pass: string) => Promise<void>;
@@ -25,30 +27,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { data: session, status } = useSession();
   const [user, setUser] = useState<User | null>(null);
 
+  const fetchProfileData = useCallback(async (): Promise<User | null> => {
+    if (!session?.user) return null;
+
+    let profesorData: any = null;
+    try {
+      profesorData = await fetchApi('/api/v1/profesor/me');
+    } catch (error) {
+      // Si falla, se usan datos de la sesión de Google o fallback
+    }
+
+    const nombre = profesorData?.nombre || (session.user.name ? session.user.name.split(' ')[0] : '');
+    const apellido = profesorData?.apellido || (session.user.name ? session.user.name.split(' ').slice(1).join(' ') : '');
+    const departamento = profesorData?.departamento || '';
+
+    let resolvedName = session.user.name || 'Profesor';
+    if (profesorData?.nombre || profesorData?.apellido) {
+      resolvedName = `${profesorData.nombre || ''} ${profesorData.apellido || ''}`.trim();
+    } else if (session.user.name) {
+      resolvedName = session.user.name;
+    }
+
+    return {
+      // @ts-ignore - Extraemos el ID si lo inyectamos en el callback
+      id: session.user.id || profesorData?.id || 'google-usr-1',
+      name: resolvedName,
+      email: session.user.email || profesorData?.email || '',
+      avatar: session.user.image || '',
+      nombre,
+      apellido,
+      departamento,
+    };
+  }, [session]);
+
+  const refreshProfile = useCallback(async () => {
+    const profile = await fetchProfileData();
+    if (profile) {
+      setUser(profile);
+    }
+  }, [fetchProfileData]);
+
   useEffect(() => {
     let isMounted = true;
-    
+
     const loadProfile = async () => {
       if (session?.user) {
-        let dbName = null;
-        try {
-          const dbProfile = await fetchApi('/api/v1/profesor/me');
-          if (dbProfile && (dbProfile.nombre || dbProfile.apellido)) {
-            dbName = (dbProfile.nombre || '') + (dbProfile.apellido ? ' ' + dbProfile.apellido : '');
-            dbName = dbName.trim();
-          }
-        } catch (error) {
-          // Si falla, silenciosamente usamos los datos de sesin (Google)
-        }
-
-        if (isMounted) {
-          setUser({
-            // @ts-ignore - Extraemos el ID si lo inyectamos en el callback
-            id: session.user.id || 'google-usr-1',
-            name: dbName || session.user.name || 'Usuario',
-            email: session.user.email || '',
-            avatar: session.user.image || '',
-          });
+        const profile = await fetchProfileData();
+        if (isMounted && profile) {
+          setUser(profile);
         }
       } else {
         if (isMounted) setUser(null);
@@ -62,7 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       isMounted = false;
     };
-  }, [session, status]);
+  }, [session, status, fetchProfileData]);
 
   const isLoading = status === 'loading';
   const isAuthenticated = status === 'authenticated' && !!user;
@@ -76,6 +102,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    clearEvaliaStorage();
+    setUser(null);
     nextAuthSignOut({ callbackUrl: '/' });
   };
 
@@ -88,6 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginWithGoogle,
         loginWithCredentials,
         logout,
+        refreshProfile,
       }}
     >
       {children}
