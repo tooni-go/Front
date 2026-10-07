@@ -125,7 +125,7 @@ export const ExamenInteligenteView: React.FC = () => {
       setPendingGeneratedExam({
         courseId: course?.id,
         titulo: result.titulo || 'Examen Generado por IA',
-        fecha: new Date().toLocaleDateString('es-ES'),
+        fecha: new Date().toISOString().split('T')[0],
         criteriosIA: result.criteriosIA || '',
         requiereRevisionAviso: huboAvisoRevision,
         preguntas: result.preguntas.map((p, idx) => ({

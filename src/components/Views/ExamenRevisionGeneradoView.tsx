@@ -52,7 +52,7 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
     pendingGeneratedExam?.titulo || 'Examen Generado por IA'
   );
   const [fecha, setFecha] = useState(
-    pendingGeneratedExam?.fecha || new Date().toLocaleDateString('es-ES')
+    pendingGeneratedExam?.fecha || new Date().toISOString().split('T')[0]
   );
   const [preguntas, setPreguntas] = useState<Question[]>(
     pendingGeneratedExam?.preguntas || [
@@ -157,6 +157,10 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
     }
     if (preguntas.length === 0) {
       setSaveError('El examen debe tener al menos una pregunta.');
+      return;
+    }
+    if (fecha && fecha < new Date().toISOString().split('T')[0]) {
+      setSaveError('No se puede planificar un examen en el pasado');
       return;
     }
 
@@ -322,13 +326,28 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
                 Fecha
               </label>
               <input
-                type="text"
+                type="date"
+                min={new Date().toISOString().split('T')[0]}
                 value={fecha}
                 onChange={(e) => setFecha(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
               />
             </div>
+            </div>
           </div>
+          
+          {/* Date Validation Warning */}
+          {fecha && fecha < new Date().toISOString().split('T')[0] && (
+            <div className="bg-rose-950/40 border border-rose-900/50 rounded-2xl p-4 flex items-start gap-3 mt-4">
+              <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-sm font-bold text-rose-400">Fecha Inválida</h3>
+                <p className="text-xs text-rose-200/70 mt-1">
+                  No se puede planificar un examen en el pasado. Por favor seleccione la fecha de hoy o una futura.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Lista de preguntas generadas */}
