@@ -98,7 +98,7 @@ export const DashboardView: React.FC = () => {
           </div>
 
           <h1 className="text-2xl md:text-3xl font-black text-white">
-            Bienvenido nuevamente, {user?.name || 'Profesor'}
+            ¡Hola de nuevo, {user?.nombre || (user?.name ? user.name.split(' ')[0] : '') || 'Profesor'}!
           </h1>
 
           <p className="text-slate-300 text-sm leading-relaxed">

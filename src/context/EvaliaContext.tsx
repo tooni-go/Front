@@ -84,6 +84,9 @@ interface EvaliaContextType {
   createDelivery: (examId: string, studentId: string, archivos: string[]) => Promise<Delivery>;
   approveDeliveryCorrection: (deliveryId: string, notaDocente: number, respuestasModificadas?: any[]) => void;
 
+  // Reset and cleanup
+  resetState: () => void;
+
   // Helper getters
   getActiveCourse: () => Course | undefined;
   getActiveExam: () => Exam | undefined;
@@ -376,6 +379,19 @@ export const EvaliaProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     );
   };
 
+  const resetState = () => {
+    setScreen('dashboard');
+    setActiveCourseId(null);
+    setActiveExamId(null);
+    setActiveDeliveryId(null);
+    setEditingStudentId(null);
+    setPendingGeneratedExam(null);
+    setCourses([]);
+    setStudents([]);
+    setExams([]);
+    setDeliveries([]);
+  };
+
   // Helper getters
   const getActiveCourse = () => courses.find((c) => c.id === activeCourseId);
   const getActiveExam = () => exams.find((e) => e.id === activeExamId);
@@ -420,6 +436,7 @@ export const EvaliaProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         updateExamQuestions,
         createDelivery,
         approveDeliveryCorrection,
+        resetState,
         getActiveCourse,
         getActiveExam,
         getActiveDelivery,

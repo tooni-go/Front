@@ -147,8 +147,8 @@
 Al finalizar el Sprint Cierre, la plataforma deberá cumplir los siguientes criterios para considerarse **lista para entrega final**:
 
 - [ ] Un profesor logueado **solo visualiza sus propios cursos, alumnos y exámenes**. Verificado con dos cuentas de Google distintas.
-- [ ] Al hacer Logout, **no quedan datos residuales** visibles al iniciar sesión con otra cuenta en el mismo navegador.
-- [ ] El saludo del Dashboard muestra el **nombre real del profesor** desde el primer login.
+- [x] Al hacer Logout, **no quedan datos residuales** visibles al iniciar sesión con otra cuenta en el mismo navegador.
+- [x] El saludo del Dashboard muestra el **nombre real del profesor** desde el primer login.
 - [ ] Existe un botón de **"Eliminar Curso"** con confirmación que elimina el curso y sus datos asociados exitosamente.
 - [ ] El formulario de creación de exámenes **impide seleccionar fechas pasadas** tanto en frontend como en backend.
 - [ ] El importador de alumnos **procesa correctamente planillas** con encabezados institucionales en las primeras filas.

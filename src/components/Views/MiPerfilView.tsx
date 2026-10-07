@@ -26,18 +26,30 @@ import {
 } from 'lucide-react';
 
 export const MiPerfilView: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshProfile } = useAuth();
   const { setScreen } = useEvalia();
   const router = useRouter();
 
   // Estados para edición de perfil de profesor
   const [isEditing, setIsEditing] = useState(false);
-  const [nombre, setNombre] = useState(user?.name?.split(' ')[0] || '');
+  const [nombre, setNombre] = useState(user?.nombre || user?.name?.split(' ')[0] || '');
   const [apellido, setApellido] = useState(
-    user?.name?.split(' ').slice(1).join(' ') || '',
+    user?.apellido || user?.name?.split(' ').slice(1).join(' ') || '',
   );
   const [isSaving, setIsSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      if (user.nombre || user.apellido) {
+        setNombre(user.nombre || '');
+        setApellido(user.apellido || '');
+      } else if (user.name) {
+        setNombre(user.name.split(' ')[0] || '');
+        setApellido(user.name.split(' ').slice(1).join(' ') || '');
+      }
+    }
+  }, [user]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -49,11 +61,11 @@ export const MiPerfilView: React.FC = () => {
           apellido: apellido.trim(),
         }),
       });
+      await refreshProfile();
       setSuccess(true);
       setTimeout(() => {
         setSuccess(false);
         setIsEditing(false);
-        window.location.reload();
       }, 1500);
     } catch (error) {
       console.error('Error updating profile:', error);
