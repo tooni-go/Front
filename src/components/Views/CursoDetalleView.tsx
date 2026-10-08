@@ -111,7 +111,6 @@ export const CursoDetalleView: React.FC<CursoDetalleViewProps> = ({ courseId: pr
         }),
       });
       setIsEditCourseModalOpen(false);
-      alert('Curso actualizado exitosamente');
       fetchCurso();
     } catch (error: any) {
       alert(error?.message || 'Error actualizando curso');
@@ -128,7 +127,6 @@ export const CursoDetalleView: React.FC<CursoDetalleViewProps> = ({ courseId: pr
         method: 'DELETE',
       });
       setIsDeleteCourseModalOpen(false);
-      alert('Curso eliminado exitosamente');
       router.push('/cursos');
     } catch (error: any) {
       alert(error?.message || 'Error eliminando curso');
@@ -167,13 +165,32 @@ export const CursoDetalleView: React.FC<CursoDetalleViewProps> = ({ courseId: pr
 
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
-      <button
-        onClick={() => router.push('/cursos')}
-        className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
-      >
-        <ArrowLeft className="w-3.5 h-3.5" />
-        <span>Volver a la lista de cursos</span>
-      </button>
+      <div className="flex justify-between items-center">
+        <button
+          onClick={() => router.push('/cursos')}
+          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Volver a la lista de cursos</span>
+        </button>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsEditCourseModalOpen(true)}
+            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all"
+            title="Editar Curso"
+          >
+            <Edit className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setIsDeleteCourseModalOpen(true)}
+            className="p-2 text-rose-400 hover:text-rose-300 hover:bg-rose-950/50 rounded-lg transition-all"
+            title="Eliminar Curso"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
 
       {/* Header Info Banner */}
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -200,20 +217,6 @@ export const CursoDetalleView: React.FC<CursoDetalleViewProps> = ({ courseId: pr
 
         {/* Action buttons */}
         <div className="flex flex-wrap items-center gap-3 shrink-0">
-          <button
-            onClick={() => setIsEditCourseModalOpen(true)}
-            className="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center gap-2"
-            title="Editar Curso"
-          >
-            <Edit className="w-4 h-4 text-indigo-400" />
-          </button>
-          <button
-            onClick={() => setIsDeleteCourseModalOpen(true)}
-            className="py-2.5 px-3 bg-slate-800 hover:bg-rose-900/40 text-slate-200 hover:text-rose-400 font-bold text-xs rounded-xl border border-slate-700 hover:border-rose-800 transition-all flex items-center gap-2"
-            title="Eliminar Curso"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
           <ReportExportDropdown
             type="curso"
             id={curso.id}

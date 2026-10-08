@@ -33,6 +33,7 @@ export const ExamenEditarView: React.FC = () => {
   
   const examId = params.id;
   const [courseId, setCourseId] = useState<string | null>(null);
+  const [anioLectivo, setAnioLectivo] = useState<number>(2015);
   
   const [titulo, setTitulo] = useState('');
   const [fecha, setFecha] = useState('');
@@ -99,6 +100,7 @@ export const ExamenEditarView: React.FC = () => {
         setTitulo(data.titulo);
         setFecha(data.fecha ? new Date(data.fecha).toISOString().split('T')[0] : '');
         setCourseId(data.cursoId);
+          if (data.curso?.anioLectivo) setAnioLectivo(data.curso.anioLectivo);
         setEntregasCount(data.entregas?.length || 0);
         
         if (data.preguntas && data.preguntas.length > 0) {
@@ -173,8 +175,8 @@ export const ExamenEditarView: React.FC = () => {
     setIsSaving(true);
     setShowWarningModal(false);
 
-    if (fecha && fecha < new Date().toISOString().split('T')[0]) {
-      setErrorMsg('No se puede planificar un examen en el pasado');
+    if (fecha && new Date(fecha).getFullYear() < anioLectivo) {
+      setErrorMsg(`No se puede registrar un examen con fecha anterior al año lectivo del curso (${anioLectivo})`);
       setIsSaving(false);
       return;
     }
@@ -342,7 +344,6 @@ export const ExamenEditarView: React.FC = () => {
               </label>
               <input
                 type="date"
-                min={new Date().toISOString().split('T')[0]}
                 value={fecha}
                 onChange={(e) => setFecha(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
@@ -350,19 +351,6 @@ export const ExamenEditarView: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* Date Validation Warning */}
-        {fecha && fecha < new Date().toISOString().split('T')[0] && (
-          <div className="bg-rose-950/40 border border-rose-900/50 rounded-2xl p-4 flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
-            <div>
-              <h3 className="text-sm font-bold text-rose-400">Fecha Inválida</h3>
-              <p className="text-xs text-rose-200/70 mt-1">
-                No se puede planificar un examen en el pasado. Por favor seleccione la fecha de hoy o una futura.
-              </p>
-            </div>
-          </div>
-        )}
 
         {/* Validation Warning */}
         {(puntajeTotal !== 10 || hasEmptyPoints) && (
@@ -399,7 +387,7 @@ export const ExamenEditarView: React.FC = () => {
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-black text-indigo-400">
-                    Pregunta N° {q.numero}
+                    Pregunta N°° {q.numero}
                   </span>
 
                   <div className="flex items-center gap-2">

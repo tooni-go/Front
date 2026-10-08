@@ -159,8 +159,9 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
       setSaveError('El examen debe tener al menos una pregunta.');
       return;
     }
-    if (fecha && fecha < new Date().toISOString().split('T')[0]) {
-      setSaveError('No se puede planificar un examen en el pasado');
+    const anioLectivo = course?.anioLectivo || 2015;
+    if (fecha && new Date(fecha).getFullYear() < anioLectivo) {
+      setSaveError(`No se puede registrar un examen con fecha anterior al año lectivo del curso (${anioLectivo})`);
       return;
     }
 
