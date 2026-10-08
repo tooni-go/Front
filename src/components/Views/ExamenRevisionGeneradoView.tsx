@@ -152,16 +152,11 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
       return;
     }
     if (!titulo.trim()) {
-      setSaveError('Por favor ingrese un tÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­tulo para el examen.');
+      setSaveError('Por favor ingrese un título para el examen.');
       return;
     }
     if (preguntas.length === 0) {
       setSaveError('El examen debe tener al menos una pregunta.');
-      return;
-    }
-    const anioLectivo = Number(course?.anioLectivo) || 2015;
-    if (fecha && new Date(fecha).getFullYear() < anioLectivo) {
-      setSaveError(`No se puede registrar un examen con fecha anterior al año lectivo del curso (${anioLectivo})`);
       return;
     }
 
@@ -190,7 +185,7 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
         }
       );
 
-      // Limpiamos el borrador temporal tras guardar con ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©xito
+      // Limpiamos el borrador temporal tras guardar con éxito
       clearDraft();
       setPendingGeneratedExam(null);
       router.push(`/examenes/${created.id}`);
@@ -223,7 +218,7 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
         />
       </div>
 
-      {/* Banner de recuperaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n de borrador previo */}
+      {/* Banner de recuperación de borrador previo */}
       {hasSavedDraft && showRestoreBanner && savedDraftMeta && (
         <div className="bg-indigo-950/70 border border-indigo-500/40 rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl animate-in fade-in duration-300">
           <div className="flex items-start gap-3.5">
@@ -232,13 +227,13 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
             </div>
             <div className="space-y-1">
               <h3 className="text-xs font-bold text-white flex items-center gap-2 flex-wrap">
-                <span>Borrador de revisiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n disponible</span>
+                <span>Borrador de revisión disponible</span>
                 <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-indigo-900/90 text-indigo-300 font-semibold border border-indigo-700/60">
                   {savedDraftMeta.updatedAt.toLocaleString('es-ES')}
                 </span>
               </h3>
               <p className="text-xs text-indigo-200/80 leading-relaxed">
-                TenÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s modificaciones guardadas localmente de esta revisiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n ({savedDraftData?.preguntas?.length || 0} consignas). ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¿QuerÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â©s restaurarlas?
+                Tenés modificaciones guardadas localmente de esta revisión ({savedDraftData?.preguntas?.length || 0} consignas). ¿Querés restaurarlas?
               </p>
             </div>
           </div>
@@ -266,26 +261,26 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
       <div className="bg-gradient-to-r from-indigo-900/50 to-slate-900 border border-indigo-500/30 rounded-3xl p-6 shadow-2xl space-y-2">
         <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-500/10 border border-indigo-500/30 rounded-full text-indigo-300 text-xs font-semibold">
           <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-          ExtracciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n Inteligente Completada
+          Extracción Inteligente Completada
         </div>
         <h1 className="text-2xl font-black text-white">
-          REVISIÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œN DEL EXAMEN GENERADO
+          REVISIÓN DEL EXAMEN GENERADO
         </h1>
         <p className="text-xs text-slate-300">
-          Revise y ajuste las preguntas, respuestas modelo y criterios de correcciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n generados por la IA antes de guardar.
+          Revise y ajuste las preguntas, respuestas modelo y criterios de corrección generados por la IA antes de guardar.
         </p>
       </div>
 
-      {/* Aviso de revisiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n cuando el origen requerÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­a validaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n */}
+      {/* Aviso de revisión cuando el origen requería validación */}
       {pendingGeneratedExam?.requiereRevisionAviso && (
         <div className="p-4 bg-amber-950/60 border border-amber-800/80 rounded-2xl flex items-start gap-3 text-amber-200 text-xs shadow-lg animate-in fade-in duration-200">
           <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
           <div>
             <p className="font-bold text-amber-300">
-              RevisiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n recomendada por extracciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n OCR/IA
+              Revisión recomendada por extracción OCR/IA
             </p>
             <p className="text-slate-300 mt-0.5">
-              El texto original proviene de un documento procesado automÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ticamente. Verifique que las consignas y criterios reflejen con exactitud lo esperado.
+              El texto original proviene de un documento procesado automáticamente. Verifique que las consignas y criterios reflejen con exactitud lo esperado.
             </p>
           </div>
         </div>
@@ -303,7 +298,7 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
       )}
 
       <div className="space-y-6">
-        {/* Datos BÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡sicos */}
+        {/* Datos Básicos */}
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 space-y-4 shadow-xl">
           <h2 className="text-sm font-bold text-white border-b border-slate-800 pb-3">
             DATOS GENERALES
@@ -312,7 +307,7 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                TÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­tulo del Examen
+                Título del Examen
               </label>
               <input
                 type="text"
@@ -334,8 +329,7 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
               />
             </div>
           </div>
-          
-          </div>
+        </div>
 
         {/* Lista de preguntas generadas */}
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 space-y-6 shadow-xl">
@@ -356,7 +350,7 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-indigo-400">
-                    Pregunta NÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â° {q.numero}
+                    Pregunta N° {q.numero}
                   </span>
                   <div className="flex items-center gap-2">
                     <button
@@ -417,7 +411,7 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
 
                   <div>
                     <label className="block text-[11px] font-semibold text-slate-400 mb-1">
-                      Puntaje MÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ximo
+                      Puntaje Máximo
                     </label>
                     <input
                       type="number"
@@ -436,13 +430,13 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Criterios de CorrecciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n IA (Subtarea 2) */}
+                {/* Criterios de Corrección IA (Subtarea 2) */}
                 <div>
                   <label className="block text-[11px] font-semibold text-indigo-300 mb-1 flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>Criterios de correcciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n IA</span>
+                    <span>Criterios de corrección IA</span>
                     <span className="text-[10px] text-slate-500 font-normal">
-                      (opcional - guÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â­a para la evaluaciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n de entregas)
+                      (opcional - guía para la evaluación de entregas)
                     </span>
                   </label>
                   <textarea
@@ -468,7 +462,7 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
           </button>
         </div>
 
-        {/* Botones de AcciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n */}
+        {/* Botones de Acción */}
         <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
           <button
             type="button"

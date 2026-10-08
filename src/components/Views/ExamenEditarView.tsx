@@ -33,7 +33,7 @@ export const ExamenEditarView: React.FC = () => {
   
   const examId = params.id;
   const [courseId, setCourseId] = useState<string | null>(null);
-  const [anioLectivo, setAnioLectivo] = useState<number>(2015);
+  const [anioLectivo, setAnioLectivo] = useState<number>(2024);
   
   const [titulo, setTitulo] = useState('');
   const [fecha, setFecha] = useState('');
@@ -100,7 +100,7 @@ export const ExamenEditarView: React.FC = () => {
         setTitulo(data.titulo);
         setFecha(data.fecha ? new Date(data.fecha).toISOString().split('T')[0] : '');
         setCourseId(data.cursoId);
-          if (data.curso?.anioLectivo) setAnioLectivo(data.curso.anioLectivo);
+        if (data.curso?.anioLectivo) setAnioLectivo(data.curso.anioLectivo);
         setEntregasCount(data.entregas?.length || 0);
         
         if (data.preguntas && data.preguntas.length > 0) {
@@ -252,12 +252,12 @@ export const ExamenEditarView: React.FC = () => {
             isOnline={isOnline}
           />
           <span className="px-3 py-1 bg-slate-900 border border-slate-700 rounded-lg text-[10px] font-bold text-slate-400">
-            MODO EDICIÃƒâ€œN
+            MODO EDICIÓN
           </span>
         </div>
       </div>
 
-      {/* Banner de recuperaciÃƒÂ³n de borrador previo */}
+      {/* Banner de recuperación de borrador previo */}
       {hasSavedDraft && showRestoreBanner && savedDraftMeta && (
         <div className="bg-indigo-950/70 border border-indigo-500/40 rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl animate-in fade-in duration-300">
           <div className="flex items-start gap-3.5">
@@ -272,7 +272,7 @@ export const ExamenEditarView: React.FC = () => {
                 </span>
               </h3>
               <p className="text-xs text-indigo-200/80 leading-relaxed">
-                TenÃƒÂ©s modificaciones guardadas en este equipo para este examen con {savedDraftData?.preguntas?.length || 0} consignas. Ã‚Â¿QuerÃƒÂ©s restaurarlas?
+                Tenés modificaciones guardadas en este equipo para este examen con {savedDraftData?.preguntas?.length || 0} consignas. ¿Querés restaurarlas?
               </p>
             </div>
           </div>
@@ -313,7 +313,7 @@ export const ExamenEditarView: React.FC = () => {
                 <AlertTriangle className="w-4 h-4 text-amber-400" />
                 Editar Examen
               </h2>
-              <p className="text-xs text-slate-400 mt-1">EstÃƒÂ¡s modificando un examen existente.</p>
+              <p className="text-xs text-slate-400 mt-1">Estás modificando un examen existente.</p>
             </div>
             {entregasCount > 0 && (
               <span className="px-3 py-1 bg-rose-950/80 border border-rose-800/40 rounded-xl text-[10px] font-bold text-rose-300 flex items-center gap-2">
@@ -326,7 +326,7 @@ export const ExamenEditarView: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                TÃƒÂ­tulo del Examen <span className="text-indigo-400">*</span>
+                Título del Examen <span className="text-indigo-400">*</span>
               </label>
               <input
                 type="text"
@@ -357,10 +357,10 @@ export const ExamenEditarView: React.FC = () => {
           <div className="bg-amber-950/40 border border-amber-900/50 rounded-2xl p-4 flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
             <div>
-              <h3 className="text-sm font-bold text-amber-400">AtenciÃƒÂ³n con los puntajes</h3>
+              <h3 className="text-sm font-bold text-amber-400">Atención con los puntajes</h3>
               <p className="text-xs text-amber-200/70 mt-1">
                 {puntajeTotal !== 10 && `El puntaje total del examen debe sumar exactamente 10. Actualmente suma ${puntajeTotal}. `}
-                {hasEmptyPoints && "Hay preguntas sin puntaje asignado. Se guardarÃƒÂ¡n con 0 puntos por defecto."}
+                {hasEmptyPoints && "Hay preguntas sin puntaje asignado. Se guardarán con 0 puntos por defecto."}
               </p>
             </div>
           </div>
@@ -387,7 +387,7 @@ export const ExamenEditarView: React.FC = () => {
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-black text-indigo-400">
-                    Pregunta NÃ‚Â°Ã‚Â° {q.numero}
+                    Pregunta N° {q.numero}
                   </span>
 
                   <div className="flex items-center gap-2">
@@ -444,7 +444,7 @@ export const ExamenEditarView: React.FC = () => {
 
                   <div>
                     <label className="block text-[11px] font-semibold text-slate-400 mb-1">
-                      Puntaje MÃƒÂ¡ximo
+                      Puntaje Máximo
                     </label>
                     <input
                       type="number"
@@ -480,7 +480,7 @@ export const ExamenEditarView: React.FC = () => {
             rows={2}
             value={criteriosIA}
             onChange={(e) => setCriteriosIA(e.target.value)}
-            placeholder="Ej: Tolerar sinÃƒÂ³nimos formales. Si falta el desarrollo pero el resultado final estÃƒÂ¡ bien, otorgar 50% de la nota."
+            placeholder="Ej: Tolerar sinónimos formales. Si falta el desarrollo pero el resultado final está bien, otorgar 50% de la nota."
             className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none resize-none"
           />
         </div>
@@ -510,10 +510,10 @@ export const ExamenEditarView: React.FC = () => {
               <AlertTriangle className="w-5 h-5"/> Cuidado
             </h3>
             <p className="text-xs text-slate-300 leading-relaxed">
-              Este examen ya tiene <strong>{entregasCount} entregas registradas</strong>. Modificar las consignas o los puntajes afectarÃƒÂ¡ la coherencia del historial acadÃƒÂ©mico y las correcciones de IA.
+              Este examen ya tiene <strong>{entregasCount} entregas registradas</strong>. Modificar las consignas o los puntajes afectará la coherencia del historial académico y las correcciones de IA.
             </p>
             <p className="text-xs text-slate-400 italic">
-              Ã‚Â¿EstÃƒÂ¡s seguro de que deseas guardar los cambios?
+              ¿Estás seguro de que deseas guardar los cambios?
             </p>
             <div className="flex gap-3 justify-end pt-2">
               <button 
@@ -529,7 +529,7 @@ export const ExamenEditarView: React.FC = () => {
                 className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl shadow-lg flex items-center gap-2 disabled:opacity-50"
               >
                 {isSaving ? <Loader2 className="w-4 h-4 animate-spin"/> : null}
-                SÃƒÂ­, Guardar Cambios
+                Sí, Guardar Cambios
               </button>
             </div>
           </div>
