@@ -152,7 +152,7 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
       return;
     }
     if (!titulo.trim()) {
-      setSaveError('Por favor ingrese un título para el examen.');
+      setSaveError('Por favor ingrese un tÃƒÂ­tulo para el examen.');
       return;
     }
     if (preguntas.length === 0) {
@@ -161,7 +161,7 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
     }
     const anioLectivo = course?.anioLectivo || 2015;
     if (fecha && new Date(fecha).getFullYear() < anioLectivo) {
-      setSaveError(`No se puede registrar un examen con fecha anterior al año lectivo del curso (${anioLectivo})`);
+      setSaveError(`No se puede registrar un examen con fecha anterior al aÃƒÂ±o lectivo del curso (${anioLectivo})`);
       return;
     }
 
@@ -190,7 +190,7 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
         }
       );
 
-      // Limpiamos el borrador temporal tras guardar con éxito
+      // Limpiamos el borrador temporal tras guardar con ÃƒÂ©xito
       clearDraft();
       setPendingGeneratedExam(null);
       router.push(`/examenes/${created.id}`);
@@ -223,7 +223,7 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
         />
       </div>
 
-      {/* Banner de recuperación de borrador previo */}
+      {/* Banner de recuperaciÃƒÂ³n de borrador previo */}
       {hasSavedDraft && showRestoreBanner && savedDraftMeta && (
         <div className="bg-indigo-950/70 border border-indigo-500/40 rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl animate-in fade-in duration-300">
           <div className="flex items-start gap-3.5">
@@ -232,13 +232,13 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
             </div>
             <div className="space-y-1">
               <h3 className="text-xs font-bold text-white flex items-center gap-2 flex-wrap">
-                <span>Borrador de revisión disponible</span>
+                <span>Borrador de revisiÃƒÂ³n disponible</span>
                 <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-indigo-900/90 text-indigo-300 font-semibold border border-indigo-700/60">
                   {savedDraftMeta.updatedAt.toLocaleString('es-ES')}
                 </span>
               </h3>
               <p className="text-xs text-indigo-200/80 leading-relaxed">
-                Tenés modificaciones guardadas localmente de esta revisión ({savedDraftData?.preguntas?.length || 0} consignas). ¿Querés restaurarlas?
+                TenÃƒÂ©s modificaciones guardadas localmente de esta revisiÃƒÂ³n ({savedDraftData?.preguntas?.length || 0} consignas). Ã‚Â¿QuerÃƒÂ©s restaurarlas?
               </p>
             </div>
           </div>
@@ -266,26 +266,26 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
       <div className="bg-gradient-to-r from-indigo-900/50 to-slate-900 border border-indigo-500/30 rounded-3xl p-6 shadow-2xl space-y-2">
         <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-500/10 border border-indigo-500/30 rounded-full text-indigo-300 text-xs font-semibold">
           <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-          Extracción Inteligente Completada
+          ExtracciÃƒÂ³n Inteligente Completada
         </div>
         <h1 className="text-2xl font-black text-white">
-          REVISIÓN DEL EXAMEN GENERADO
+          REVISIÃƒâ€œN DEL EXAMEN GENERADO
         </h1>
         <p className="text-xs text-slate-300">
-          Revise y ajuste las preguntas, respuestas modelo y criterios de corrección generados por la IA antes de guardar.
+          Revise y ajuste las preguntas, respuestas modelo y criterios de correcciÃƒÂ³n generados por la IA antes de guardar.
         </p>
       </div>
 
-      {/* Aviso de revisión cuando el origen requería validación */}
+      {/* Aviso de revisiÃƒÂ³n cuando el origen requerÃƒÂ­a validaciÃƒÂ³n */}
       {pendingGeneratedExam?.requiereRevisionAviso && (
         <div className="p-4 bg-amber-950/60 border border-amber-800/80 rounded-2xl flex items-start gap-3 text-amber-200 text-xs shadow-lg animate-in fade-in duration-200">
           <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
           <div>
             <p className="font-bold text-amber-300">
-              Revisión recomendada por extracción OCR/IA
+              RevisiÃƒÂ³n recomendada por extracciÃƒÂ³n OCR/IA
             </p>
             <p className="text-slate-300 mt-0.5">
-              El texto original proviene de un documento procesado automáticamente. Verifique que las consignas y criterios reflejen con exactitud lo esperado.
+              El texto original proviene de un documento procesado automÃƒÂ¡ticamente. Verifique que las consignas y criterios reflejen con exactitud lo esperado.
             </p>
           </div>
         </div>
@@ -303,7 +303,7 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
       )}
 
       <div className="space-y-6">
-        {/* Datos Básicos */}
+        {/* Datos BÃƒÂ¡sicos */}
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 space-y-4 shadow-xl">
           <h2 className="text-sm font-bold text-white border-b border-slate-800 pb-3">
             DATOS GENERALES
@@ -312,7 +312,7 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Título del Examen
+                TÃƒÂ­tulo del Examen
               </label>
               <input
                 type="text"
@@ -328,28 +328,14 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
               </label>
               <input
                 type="date"
-                min={new Date().toISOString().split('T')[0]}
                 value={fecha}
                 onChange={(e) => setFecha(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
               />
             </div>
-            </div>
           </div>
           
-          {/* Date Validation Warning */}
-          {fecha && fecha < new Date().toISOString().split('T')[0] && (
-            <div className="bg-rose-950/40 border border-rose-900/50 rounded-2xl p-4 flex items-start gap-3 mt-4">
-              <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
-              <div>
-                <h3 className="text-sm font-bold text-rose-400">Fecha Inválida</h3>
-                <p className="text-xs text-rose-200/70 mt-1">
-                  No se puede planificar un examen en el pasado. Por favor seleccione la fecha de hoy o una futura.
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
+          </div>
 
         {/* Lista de preguntas generadas */}
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 space-y-6 shadow-xl">
@@ -370,7 +356,7 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-indigo-400">
-                    Pregunta N° {q.numero}
+                    Pregunta NÃ‚Â° {q.numero}
                   </span>
                   <div className="flex items-center gap-2">
                     <button
@@ -431,7 +417,7 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
 
                   <div>
                     <label className="block text-[11px] font-semibold text-slate-400 mb-1">
-                      Puntaje Máximo
+                      Puntaje MÃƒÂ¡ximo
                     </label>
                     <input
                       type="number"
@@ -450,13 +436,13 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Criterios de Corrección IA (Subtarea 2) */}
+                {/* Criterios de CorrecciÃƒÂ³n IA (Subtarea 2) */}
                 <div>
                   <label className="block text-[11px] font-semibold text-indigo-300 mb-1 flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>Criterios de corrección IA</span>
+                    <span>Criterios de correcciÃƒÂ³n IA</span>
                     <span className="text-[10px] text-slate-500 font-normal">
-                      (opcional - guía para la evaluación de entregas)
+                      (opcional - guÃƒÂ­a para la evaluaciÃƒÂ³n de entregas)
                     </span>
                   </label>
                   <textarea
@@ -482,7 +468,7 @@ export const ExamenRevisionGeneradoView: React.FC = () => {
           </button>
         </div>
 
-        {/* Botones de Acción */}
+        {/* Botones de AcciÃƒÂ³n */}
         <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
           <button
             type="button"
