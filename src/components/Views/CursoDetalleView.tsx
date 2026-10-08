@@ -42,6 +42,27 @@ export const CursoDetalleView: React.FC<CursoDetalleViewProps> = ({ courseId: pr
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isEditCourseModalOpen, setIsEditCourseModalOpen] = useState(false);
+  const [isDeleteCourseModalOpen, setIsDeleteCourseModalOpen] = useState(false);
+  
+  const [editFormData, setEditFormData] = useState({
+    materia: '',
+    anio: '',
+    division: '',
+    anioLectivo: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (curso) {
+      setEditFormData({
+        materia: curso.materia || '',
+        anio: curso.anio ? curso.anio.toString() : '',
+        division: curso.division || '',
+        anioLectivo: curso.anioLectivo ? curso.anioLectivo.toString() : ''
+      });
+    }
+  }, [curso]);
 
   const fetchCurso = () => {
     if (!courseId) return;
@@ -74,6 +95,46 @@ export const CursoDetalleView: React.FC<CursoDetalleViewProps> = ({ courseId: pr
     }
   };
 
+  const handleUpdateCurso = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!courseId) return;
+    setIsSubmitting(true);
+    try {
+      await fetchApi(`/api/v1/cursos/${courseId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          materia: editFormData.materia,
+          anio: parseInt(editFormData.anio),
+          division: editFormData.division,
+          anioLectivo: parseInt(editFormData.anioLectivo)
+        }),
+      });
+      setIsEditCourseModalOpen(false);
+      fetchCurso();
+    } catch (error: any) {
+      alert(error?.message || 'Error actualizando curso');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteCursoAction = async () => {
+    if (!courseId) return;
+    setIsSubmitting(true);
+    try {
+      await fetchApi(`/api/v1/cursos/${courseId}`, {
+        method: 'DELETE',
+      });
+      setIsDeleteCourseModalOpen(false);
+      router.push('/cursos');
+    } catch (error: any) {
+      alert(error?.message || 'Error eliminando curso');
+      setIsSubmitting(false);
+    }
+  };
+
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20 gap-3 text-slate-400">
@@ -104,13 +165,32 @@ export const CursoDetalleView: React.FC<CursoDetalleViewProps> = ({ courseId: pr
 
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
-      <button
-        onClick={() => router.push('/cursos')}
-        className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
-      >
-        <ArrowLeft className="w-3.5 h-3.5" />
-        <span>Volver a la lista de cursos</span>
-      </button>
+      <div className="flex justify-between items-center">
+        <button
+          onClick={() => router.push('/cursos')}
+          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Volver a la lista de cursos</span>
+        </button>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsEditCourseModalOpen(true)}
+            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all"
+            title="Editar Curso"
+          >
+            <Edit className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setIsDeleteCourseModalOpen(true)}
+            className="p-2 text-rose-400 hover:text-rose-300 hover:bg-rose-950/50 rounded-lg transition-all"
+            title="Eliminar Curso"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
 
       {/* Header Info Banner */}
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -308,6 +388,108 @@ export const CursoDetalleView: React.FC<CursoDetalleViewProps> = ({ courseId: pr
           onClose={() => setIsImportModalOpen(false)}
           onSuccess={() => fetchCurso()}
         />
+      )}
+
+      {isEditCourseModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md overflow-hidden">
+            <div className="p-5 border-b border-slate-800 flex justify-between items-center">
+              <h3 className="text-white font-bold text-lg">Editar Curso</h3>
+              <button onClick={() => setIsEditCourseModalOpen(false)} className="text-slate-400 hover:text-white">✕</button>
+            </div>
+            <form onSubmit={handleUpdateCurso} className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Materia</label>
+                <input
+                  type="text"
+                  required
+                  value={editFormData.materia}
+                  onChange={(e) => setEditFormData({ ...editFormData, materia: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Año</label>
+                  <input
+                    type="number"
+                    required
+                    value={editFormData.anio}
+                    onChange={(e) => setEditFormData({ ...editFormData, anio: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">División</label>
+                  <input
+                    type="text"
+                    required
+                    value={editFormData.division}
+                    onChange={(e) => setEditFormData({ ...editFormData, division: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Año Lectivo</label>
+                <input
+                  type="number"
+                  required
+                  value={editFormData.anioLectivo}
+                  onChange={(e) => setEditFormData({ ...editFormData, anioLectivo: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsEditCourseModalOpen(false)}
+                  className="px-4 py-2 bg-slate-800 text-white text-xs font-bold rounded-xl hover:bg-slate-700 transition"
+                  disabled={isSubmitting}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-500 transition flex items-center gap-2"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Guardar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isDeleteCourseModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-sm p-6 text-center space-y-4 shadow-xl">
+            <AlertTriangle className="w-12 h-12 text-rose-500 mx-auto" />
+            <h3 className="text-white font-black text-lg">¿Eliminar Curso?</h3>
+            <p className="text-slate-400 text-sm">
+              Esta acción eliminará permanentemente el curso, incluyendo todos sus alumnos y exámenes. Esta acción no se puede deshacer.
+            </p>
+            <div className="flex flex-col gap-2 pt-4">
+              <button
+                onClick={handleDeleteCursoAction}
+                disabled={isSubmitting}
+                className="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold rounded-xl transition flex justify-center items-center gap-2"
+              >
+                {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                Sí, Eliminar Curso
+              </button>
+              <button
+                onClick={() => setIsDeleteCourseModalOpen(false)}
+                disabled={isSubmitting}
+                className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

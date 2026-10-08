@@ -35,7 +35,7 @@ export const ExamenManualView: React.FC = () => {
   const [course, setCourse] = useState<any>(null);
   
   const [titulo, setTitulo] = useState('Primer Parcial');
-  const [fecha, setFecha] = useState(new Date().toLocaleDateString('es-ES'));
+  const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
   const [criteriosIA, setCriteriosIA] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -136,6 +136,13 @@ export const ExamenManualView: React.FC = () => {
     setErrorMsg(null);
     setIsSaving(true);
 
+    const anioLectivo = Number(course?.anioLectivo) || 2015;
+    if (fecha && new Date(fecha).getFullYear() < anioLectivo) {
+      setErrorMsg(`No se puede registrar un examen con fecha anterior al año lectivo del curso (${anioLectivo})`);
+      setIsSaving(false);
+      return;
+    }
+
     try {
       const payload = {
         titulo: titulo.trim(),
@@ -156,7 +163,7 @@ export const ExamenManualView: React.FC = () => {
         body: JSON.stringify(payload)
       });
 
-      // Limpiamos el borrador local tras éxito en el backend
+      // Limpiamos el borrador local tras ÃƒÂ©xito en el backend
       clearDraft();
 
       setSuccess(true);
@@ -179,7 +186,7 @@ export const ExamenManualView: React.FC = () => {
           className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Cambiar método de creación</span>
+          <span>Cambiar mÃƒÂ©todo de creaciÃƒÂ³n</span>
         </button>
 
         <AutosaveBadge
@@ -189,7 +196,7 @@ export const ExamenManualView: React.FC = () => {
         />
       </div>
 
-      {/* Banner de recuperación de borrador previo */}
+      {/* Banner de recuperaciÃƒÂ³n de borrador previo */}
       {hasSavedDraft && showRestoreBanner && savedDraftMeta && (
         <div className="bg-indigo-950/70 border border-indigo-500/40 rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl animate-in fade-in duration-300">
           <div className="flex items-start gap-3.5">
@@ -204,7 +211,7 @@ export const ExamenManualView: React.FC = () => {
                 </span>
               </h3>
               <p className="text-xs text-indigo-200/80 leading-relaxed">
-                Tenés un borrador guardado en este equipo con {savedDraftData?.preguntas?.length || 0} consignas redactadas. ¿Querés restaurarlo?
+                TenÃƒÂ©s un borrador guardado en este equipo con {savedDraftData?.preguntas?.length || 0} consignas redactadas. Ã‚Â¿QuerÃƒÂ©s restaurarlo?
               </p>
             </div>
           </div>
@@ -250,7 +257,7 @@ export const ExamenManualView: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Título del Examen <span className="text-indigo-400">*</span>
+                TÃƒÂ­tulo del Examen <span className="text-indigo-400">*</span>
               </label>
               <input
                 type="text"
@@ -267,10 +274,10 @@ export const ExamenManualView: React.FC = () => {
                 Fecha de Tomada
               </label>
               <input
-                type="text"
+                type="date"
+
                 value={fecha}
                 onChange={(e) => setFecha(e.target.value)}
-                placeholder="DD/MM/AAAA"
                 className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
               />
             </div>
@@ -282,10 +289,10 @@ export const ExamenManualView: React.FC = () => {
           <div className="bg-amber-950/40 border border-amber-900/50 rounded-2xl p-4 flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
             <div>
-              <h3 className="text-sm font-bold text-amber-400">Atención con los puntajes</h3>
+              <h3 className="text-sm font-bold text-amber-400">AtenciÃƒÂ³n con los puntajes</h3>
               <p className="text-xs text-amber-200/70 mt-1">
                 {puntajeTotal !== 10 && `El puntaje total del examen debe sumar exactamente 10. Actualmente suma ${puntajeTotal}. `}
-                {hasEmptyPoints && "Hay preguntas sin puntaje asignado. Se guardarán con 0 puntos por defecto."}
+                {hasEmptyPoints && "Hay preguntas sin puntaje asignado. Se guardarÃƒÂ¡n con 0 puntos por defecto."}
               </p>
             </div>
           </div>
@@ -312,7 +319,7 @@ export const ExamenManualView: React.FC = () => {
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-black text-indigo-400">
-                    Pregunta N° {q.numero}
+                    Pregunta NÃ‚Â° {q.numero}
                   </span>
 
                   {preguntas.length > 1 && (
@@ -358,7 +365,7 @@ export const ExamenManualView: React.FC = () => {
 
                   <div>
                     <label className="block text-[11px] font-semibold text-slate-400 mb-1">
-                      Puntaje Máximo
+                      Puntaje MÃƒÂ¡ximo
                     </label>
                     <input
                       type="number"
@@ -394,7 +401,7 @@ export const ExamenManualView: React.FC = () => {
             rows={2}
             value={criteriosIA}
             onChange={(e) => setCriteriosIA(e.target.value)}
-            placeholder="Ej: Tolerar sinónimos formales. Si falta el desarrollo pero el resultado final está bien, otorgar 50% de la nota."
+            placeholder="Ej: Tolerar sinÃƒÂ³nimos formales. Si falta el desarrollo pero el resultado final estÃƒÂ¡ bien, otorgar 50% de la nota."
             className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl p-3 text-xs text-white placeholder-slate-600 focus:outline-none resize-none"
           />
         </div>
